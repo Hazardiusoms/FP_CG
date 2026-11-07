@@ -1,5 +1,6 @@
 #pragma once
 #include "Shader.hpp"
+#include "Mesh.hpp"
 #include "RenderContext.hpp"
 #include "SceneState.hpp"
 
@@ -12,13 +13,13 @@ public:
     Road& operator=(const Road&)=delete;
     void initialize(const std::filesystem::path& shaderDirectory);
     void update(float deltaTime,float speed);
-    void render(const RenderContext& context) const;
+    void render(const RenderContext& context, bool alternatePalette=false) const;
     void reset() { offset_=0; }
     void shutdown();
     double offset() const { return offset_; }
 private:
     Shader shader_;
-    GLuint vao_=0,vbo_=0;
+    Mesh mesh_;
     double offset_=0;
 };
 } // namespace sw

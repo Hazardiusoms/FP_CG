@@ -82,9 +82,29 @@ void cameraTests() {
     s=SceneState{}; s.carX=2; camera.update(s,1600,900,ctx);
     check(ctx.cameraPosition.x>0,"Follow camera ignores future car state");
 }
+void newControlTests(){
+    SceneState a,b; InputState orbit; orbit.orbitHorizontal=1;
+    for(int i=0;i<30;++i)updateScene(a,orbit,1.0f/30);
+    for(int i=0;i<144;++i)updateScene(b,orbit,1.0f/144);
+    check(close(a.orbitYaw,b.orbitYaw),"Orbit speed depends on frame count");
+    check(a.camera==CameraMode::Presentation,"Orbit input does not activate orbit view");
+    Input mouse;mouse.mouse(100,-30);mouse.scroll(3);
+    const auto delta=mouse.consume();
+    check(delta.mouseDx==100&&delta.mouseDy==-30&&delta.scroll==3,"Mouse delta accumulation");
+    check(mouse.consume().mouseDx==0&&mouse.consume().scroll==0,"Mouse deltas repeated");
+    SceneState x,y;updateScene(x,delta,0);updateScene(y,delta,0.05f);
+    check(x.orbitYaw==y.orbitYaw,"Mouse displacement incorrectly multiplied by deltaTime");
+    InputState extreme;extreme.mouseDy=-100000;extreme.scroll=100000;updateScene(x,extreme,0);
+    check(x.orbitPitch<=1.4f&&x.orbitRadius>=3,"Orbit bounds failed");
+    InputState toggle;toggle.pause=true;toggle.palette=true;toggle.help=true;updateScene(x,toggle,0);
+    check(x.paused&&x.alternatePalette&&!x.showHelp,"Scene interactions failed");
+    InputState reset;reset.reset=true;updateScene(x,reset,0);
+    check(!x.paused&&!x.alternatePalette&&x.showHelp&&x.orbitRadius==14,"New controls do not reset");
+}
+
 }
 int main() {
-    try { mathTests(); stateTests(); inputTests(); cameraTests();
+    try { mathTests(); stateTests(); inputTests(); cameraTests(); newControlTests();
         std::cout<<"PASS: "<<checks<<" math, timing, input, state, and camera checks\n"; return 0;
     } catch(const std::exception& error) { std::cerr<<"FAIL: "<<error.what()<<'\n'; return 1; }
 }

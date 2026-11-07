@@ -2,6 +2,7 @@
 in vec2 vUv;
 in vec3 vWorldPosition;
 uniform float uOffset;
+uniform float uAlternatePalette;
 uniform float uRoadHalfWidth;
 uniform vec3 uCameraPosition;
 out vec4 fragColor;
@@ -18,6 +19,7 @@ void main() {
     float inside=1.0-smoothstep(uRoadHalfWidth,uRoadHalfWidth+edgeFootprint,x);
     vec3 ground=mix(vec3(0.027,0.009,0.055),vec3(0.012,0.020,0.042),inside);
     vec3 gridColor=mix(vec3(0.54,0.04,0.70),vec3(0.06,0.52,0.65),inside);
+    gridColor=mix(gridColor,vec3(0.9,0.36,0.06),uAlternatePalette);
     vec3 color=ground+grid*gridColor+edge*vec3(0.95,0.10,0.46);
     float distanceToCamera=length(vWorldPosition-uCameraPosition);
     float visibility=1.0-smoothstep(45.0,200.0,distanceToCamera);

@@ -16,9 +16,35 @@ Almas’s initial framework is implemented locally. The baseline section below d
 
 **Publication is human-only. Every member personally reviews, stages, commits, and pushes their own work. AI must never push or publish changes through GitHub APIs, browser actions, IDE synchronization, or any other route. Pull requests and merges are also human actions.**
 
+## Verified requirements and current status
+
+The supplied **Final project requirements (2).pdf** and **Final project topics (1).pdf** are the authority. This update supersedes the original Week 8 assumptions. The source is a framework prototype, not a finished final submission.
+
+- **R1 — Modern pipeline:** implemented locally. C++17, OpenGL core, separate GLSL vertex/fragment files, VAO/VBO/EBO and indexed road rendering. No fixed-function rendering.
+- **R2 — At least five distinct scene objects:** pending. The road and reference block are insufficient. Plan road, car, left mountain formation, right mountain formation and sun, with visibly distinct geometry and placement; document the final object inventory. Do not count HUD letters as scene objects.
+- **R3 — Model/view/projection and hierarchy:** matrix helpers and MVP are implemented; the required parent–child hierarchy is pending Turar's car. Demonstrate body motion carrying wheels/headlights and independent wheel rotation.
+- **R4 — Per-fragment lighting:** pending Nursalim. Implement Phong or Blinn–Phong ambient/diffuse/specular with **at least two lights**; at least one light must move or toggle. Emissive grid colors do not satisfy lighting.
+- **R5 — Texture or equivalent procedural shading:** procedural UV grid is implemented. Its periodic masks, derivative filtering, road-edge colors and distance fade provide a shader-based surface pattern. No image texture or mipmap chain is claimed.
+- **R6 — Keyboard and mouse camera plus scene interaction:** implemented locally. Orbit uses I/J/K/L and right-mouse drag; U/O and scrolling zoom. Speed, road pause and palette are three distinct scene interactions. A/D steering remains pending.
+- **R7 — Performance:** visible live FPS, default 1280×720, repeatable benchmark implemented. Local prototype results are in docs/progress/almas.md. The required stable ≥30 FPS on the TA machine is still unverified; ≥60 FPS is the full-performance target. Re-measure after all modules and effects are integrated.
+- **R8 — Reproducible setup:** local CMake build uses the assignment's GLFW/GLEW setup. No new runtime library was added. Verify a fresh checkout on the TA setup; any additional dependency must be included or built by the repository without requiring another TA installation.
+
+Missing any R1–R8 requirement caps the technical-depth section at 60%; a build failure caps the overall result at 50%. Two functioning stretch features are optional for basic completion but needed for the corresponding eight stretch points. Bloom and CRT are not implemented and must not be advertised as working.
+
+## Submission and defense checklist
+
+- Submit three days before defense, by **23:59 Asia/Almaty**. The exact defense date is not supplied; do not invent a calendar deadline. Week 10 is the defense week, so freeze the integrated build before the three-day cutoff.
+- A human adds the TA as a repository member and checks access. All four members make regular, meaningful personal commits. A human creates the **v1.0** tag on the submission date. AI never stages, commits, pushes, tags, merges or creates PRs.
+- The report follows the instructor's Word template in academic English, includes equations, architecture, honest individual contributions, screenshots of every implemented feature, hardware and FPS measurements, limitations, and IEEE or APA references.
+- Review and compare **at least 15 credible Q1–Q2 journal sources**. A bibliography alone is insufficient. Verify the relevant journal rankings and year/category before claiming this condition; the current draft's quartile verification remains open.
+- Include an AI Use note in both README and report: tool, where assistance was used, and actual human revisions. Do not invent human review or edits.
+- Prepare **8–12 slides**, **7–10 minutes** total; all four members participate and can be questioned on any code.
+- Record a **3–6 minute, 1080p** real-time demo with FPS visible throughout. Voiceover or captions identify features and R1–R7 evidence. Show each claimed stretch feature enabled/disabled. The final demo and slides are still pending.
+- Keep source, separate shaders, report, slides, video/link and credits consistent with the same reviewed build. Exclude build folders, caches and personal files. Confirm the actual Moodle fields and upload successfully before the cutoff.
+
 ## Implemented framework baseline — Almas, Week 8
 
-The local framework now builds and renders the scrolling grid with two cameras. It includes shared math, state, centralized input, shader loading, resize handling, reset, tests, and a temporary stationary reference block. **The block is not a car implementation.** Car steering/geometry, mountains, sky/sun, lighting, bloom, and CRT are still assigned to the other modules or later milestones. A/D input is collected but does not move the temporary block. B/T requests are collected but do not enable nonexistent effects.
+The local framework now builds and renders an indexed scrolling grid with follow and interactive orbit cameras, keyboard/mouse controls, live FPS/help, road pause and palette selection. Mesh owns VAO/VBO/EBO; the road uses four vertices and six indices. It includes shared math, state, centralized input, shader loading, resize handling, reset, tests, and a temporary stationary reference block. **The block is not a car implementation.** Car steering/geometry, mountains, sky/sun, lighting, bloom, and CRT are still assigned to the other modules or later milestones. A/D input is collected but does not move the temporary block. B/T requests are collected but do not enable nonexistent effects.
 
 ### Finalized shared API
 
@@ -30,7 +56,7 @@ The initial math decision is a small tested `sw` namespace implementation in `sr
 - `Camera::update(const SceneState&, int width, int height, RenderContext&) const` writes camera data and returns false for a zero-sized framebuffer.
 - `RenderContext` contains view/projection, camera position, orthonormal forward/right/up vectors, vertical FOV in radians, and framebuffer pixel dimensions. Muslim can reconstruct a sky ray using these fields without introducing a second camera implementation.
 - `Shader::initialize(vertexPath, fragmentPath)` compiles/links or throws a filename-rich exception. `use()` binds it; `set(name, Mat4/Mat3/Vec3/float)` uploads required active uniforms. Its destructor/shutdown releases the owned program. Do not copy Shader objects.
-- `Road::initialize(shaderDirectory)`, `update(float dt, float speed)`, `render(const RenderContext&) const`, `reset()`, and `shutdown()` are implemented. Initializers return void and throw on failure; this replaces the earlier conceptual bool lifecycle example for these implemented modules.
+- `Road::initialize(shaderDirectory)`, `update(float dt, float speed)`, `render(const RenderContext&, bool alternatePalette=false) const`, `reset()`, and `shutdown()` are implemented. Initializers return void and throw on failure; this replaces the earlier conceptual bool lifecycle example for these implemented modules.
 - `ReferenceMarker` uses initialize/render/shutdown and is removed when Turar's car is integrated.
 
 GPU owners are non-copyable. They must be destroyed before the GLFW window/context. Do not declare global GPU-owning instances. The road reserves vertex attribute 2 for UV; lit geometry still uses attribute 0 for position and 1 for normal.
@@ -66,7 +92,7 @@ ctest --test-dir build --output-on-failure
 
 Alternatively, double-click Run.command on macOS after dependencies are installed. Run from the repository root; launch the built executable using an absolute path when starting from another working directory. For a multi-configuration generator, use its configuration subdirectory and `ctest -C Debug`.
 
-Actual local results: 32 CPU checks passed; real OpenGL checks passed for visible rendering, grid motion, exact repetition after a whole UV period, camera-switch key edges, speed change, reset restoring the initial image, portrait resize, zero-framebuffer protection, and absence of GL errors at the checked stages. Missing shader paths, malformed shader source, incompatible shader stages, and unknown CLI options produce nonzero exits with useful diagnostics. Running from an unrelated working directory was verified. These are automated event/state checks and real GPU renders, not a claim of human keyboard testing or a second-machine test.
+Actual local results: 40 CPU checks passed; real OpenGL checks passed for visible rendering, grid motion, exact repetition after a whole UV period, camera-switch key edges, speed change, reset restoring the initial image, portrait resize, zero-framebuffer protection, and absence of GL errors at the checked stages. Missing shader paths, malformed shader source, incompatible shader stages, and unknown CLI options produce nonzero exits with useful diagnostics. Running from an unrelated working directory was verified. These are automated event/state checks and real GPU renders, not a claim of human keyboard testing or a second-machine test.
 
 ```bash
 ./build/synthwave_drive --smoke-test build/smoke
@@ -78,8 +104,8 @@ Captures are genuine framebuffer readbacks, in PPM format. PNG evidence is in do
 ### Current handoff status
 
 - Completed locally: Almas's initial framework, road, camera, shared utilities, input routing, build/run setup, and tests.
-- Pending: personal code review, manual Git commit/push/PR, teammate module integration, second-computer testing, confirmation of R1–R8 and exact deadline.
-- No commits, branches, pushes, PRs, or other remote writes were performed by AI.
+- Pending for this update: personal code review and human-only publication, teammate module integration, second-computer testing, completion of the mapped R1–R8 gaps and confirmation of the exact deadline.
+- No commits, branches, pushes, PRs, or other remote writes were performed by AI. The earlier framework was published manually by Almas as commit 6e5582c; this update is local and uncommitted.
 - Implementation and documentation were prepared with AI assistance. Almas must review and understand them before submitting or defending the work.
 
 
@@ -201,7 +227,7 @@ The player will be able to accelerate and slow down. A shared speed value will d
 
 #### Camera modes
 
-The scene will include a camera behind the car and a second presentation view. View and projection matrices will be shared across the 3D modules. The projection aspect ratio will update when the window is resized.
+The framework includes a camera behind the car and an orbit presentation view controlled by keyboard and mouse. View and projection matrices will be shared across the 3D modules. The projection aspect ratio will update when the window is resized.
 
 #### Hierarchical car model
 
@@ -209,7 +235,7 @@ The car body will act as the parent of the wheels, headlights, and decorative pa
 
 #### Lighting and materials
 
-The car will use ambient, diffuse, and specular lighting. Surface normals and light directions will determine shading, while material parameters will control body color and highlights. Emissive parts will remain visually distinct from lit surfaces.
+The car will use per-fragment ambient, diffuse, and specular lighting from at least two lights, with at least one movable or toggleable light. Surface normals and light directions will determine shading, while material parameters will control body color and highlights. Emissive parts will remain visually distinct from lit surfaces.
 
 #### Controls and reset
 
@@ -324,7 +350,7 @@ Before submission, we will verify that:
 - Frame-rate measurements include the test computer, resolution, and effect settings.
 - A fresh checkout builds and runs on a second team member's computer.
 
-The topic document also refers to general requirements **R1–R8** without defining them. We will obtain the full requirements and map them to the implementation before confirming final compliance.
+The full R1–R8 criteria are available and mapped in the verified requirements section above. Complete every pending item before claiming final compliance.
 
 ### Team
 
@@ -348,7 +374,7 @@ The topic document requires submission **three days before the final exam**. The
 
 Original geometry and procedural visuals are preferred. Any external assets, libraries, or adapted code will be credited in `CREDITS.md` and the report, including applicable licenses.
 
-AI assistance has been used to draft and organize this project specification and development plan. Any AI assistance used during implementation will also be documented. Every team member remains responsible for checking, understanding, and explaining the code they submit.
+OpenAI Codex assisted with the framework implementation, tests, report and development documentation; the README AI Use note records the current scope. Human revisions must be recorded honestly after review. Every team member remains responsible for checking, understanding, and explaining the code they submit.
 
 ---
 
@@ -454,7 +480,7 @@ Complete the required scene first, integrate early, and add optional effects onl
 #### Initial coordination
 
 - [ ] Confirm Topic 13 registration with the instructor.
-- [ ] Obtain the full R1–R8 requirements and grading criteria.
+- [ ] Read the supplied final requirements and use the verified R1–R8 mapping above.
 - [ ] Confirm the exam date and calculate the submission deadline.
 - [ ] Create the shared repository and verify the development setup on team computers.
 - [ ] Agree on coordinate axes, scale, road width, car size, module interfaces, and visual references.
@@ -577,7 +603,7 @@ Allocate speaking time after the instructor confirms the presentation duration. 
 
 ### Immediate next steps
 
-1. Confirm the topic, obtain R1–R8, and record the exact deadline.
+1. Confirm topic registration, read the supplied R1–R8 mapping, and record the exact deadline.
 2. Create the shared repository and application skeleton.
 3. Agree on module interfaces and coordinate conventions.
 4. Begin the four assigned modules.
@@ -744,7 +770,7 @@ Bloom and CRT are not blockers for this meeting. The framework, visible core obj
 
 ### Requirements and deadline
 
-Confirm the complete R1–R8 requirements with the instructor; these guides do not invent them. Confirm the exam date and the required submission three days before it. If this means submission in Week 9, move the release work earlier. Do not wait until the defense to discover a missing required item.
+Use the complete R1–R8 mapping from the supplied requirements PDF above; resolve only genuine ambiguities with the instructor. Confirm the exam date and the required submission three days before it. If this means submission in Week 9, move the release work earlier. Do not wait until the defense to discover a missing required item.
 
 ---
 
@@ -921,7 +947,7 @@ git switch -c almas/core-road
 
 Before publishing, check that all four names, repository links, and the no-AI-push rule are correct. Commit the documentation, push your branch personally, and open a pull request. Keep this initial documentation change small enough for a teammate to review.
 
-Confirm the complete R1–R8 requirements, topic registration, exam date, and submission deadline with the instructor. Record the results in the plan section of this file when known; do not fill gaps with guesses.
+Read the supplied R1–R8 requirements, then confirm topic registration, exam date and submission deadline with the instructor. Record the results in the plan section of this file when known; do not fill gaps with guesses.
 
 ### Step 2 — Establish the build
 
@@ -1448,7 +1474,7 @@ Do not take over other members' geometry or main loop. Coordinate the test mesh 
 1. Define the initial light and material parameter list.
 2. Write the lighting equations in your progress note in your own words.
 3. Agree with Turar on vertex positions/normals and the common shader interface.
-4. Choose a single simple point light for the first integrated version unless the confirmed final requirements require something different.
+4. Implement at least two lights for R4, with one movable or toggleable; use separate controls and verify both contributions.
 5. Draft a validation checklist covering normals, camera movement, material visibility, and resize.
 6. List the shared math functions you need, especially normal-matrix calculation.
 
@@ -1500,7 +1526,7 @@ Implementation order:
 6. Add emissive color as a separate contribution.
 7. Use material values that produce visible differences without washing the whole car into white.
 
-Keep the color-space assumptions consistent and document whether gamma correction is used. Do not add an incomplete color-management system that makes comparisons harder. Avoid shadows, multiple dynamic lights, and attenuation tuning until the basic result is correct, unless confirmed final requirements demand them.
+Keep the color-space assumptions consistent and document whether gamma correction is used. Do not add an incomplete color-management system that makes comparisons harder. Implement the required two-light system before optional shadows. Check attenuation and toggle behavior without confusing emissive colors with surface lighting.
 
 ### Step 4 — Expose a small reusable lighting service
 
@@ -1615,3 +1641,14 @@ Explain each lighting term, why camera position is needed for specular highlight
 > Read this entire AGENTS.md, especially the shared rules and the Nursalim Onalbayev Week 8 section. I am working on Nursalim Onalbayev's assigned contribution. Help me implement Week 8 lighting and local validation only. Reuse the framework and coordinate the material interface with the car module. Explain coordinate spaces and normal transforms. Do not start bloom/CRT before the core is stable. Do not change Git state, push, use GitHub write APIs, open PRs, or publish anything. Finish with verified results and a handoff for me to publish personally.
 
 ---
+
+## November framework API additions
+
+- `Mesh::initialize(vertices, strideFloats, indices, attributes)` owns a VAO/VBO/EBO; `draw()` issues indexed triangles. Reuse this for new geometry. Attributes carry location, component count and offset in floats. Position uses location 0; normals use 1; UV uses 2.
+- `Input::mouse(dx,dy)` and `scroll(dy)` accumulate events and `consume()` clears each displacement once. Do not multiply mouse displacement by delta time. Held keyboard orbit uses delta time.
+- Orbit yaw wraps; pitch is clamped to 0.08–1.4 radians and radius to 3–45 units. `CameraMode::Presentation` is the orbit mode, retained for compatibility.
+- `SceneState` adds orbitYaw/orbitPitch/orbitRadius, paused, alternatePalette and showHelp. Road pause currently freezes road phase; integrate the same pause condition in future car/environment animation. Camera interaction must still work while paused.
+- `Hud` renders last and restores depth-test/depth-write state. The FPS line remains when help is hidden. Keep FPS visible when adding bloom/CRT or recording.
+- Default drawable is 1280×720. Retina scaling is disabled on macOS and initial events are processed before deterministic framebuffer capture.
+- Read the current README controls before allocating teammate keys. I/J/K/L/U/O, G/H and Space are already used; choose non-conflicting lighting controls.
+- The current code passes 40 CPU checks and GPU smoke checks. This does not prove the still-missing hierarchy, lighting or environment. Do not copy the prototype benchmark into final-scene results.

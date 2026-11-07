@@ -10,7 +10,7 @@ find_package(GLEW REQUIRED)
 add_library(synthwave_core src/Camera.cpp)
 target_include_directories(synthwave_core PUBLIC src)
 add_executable(synthwave_drive
-    src/main.cpp src/Shader.cpp src/Road.cpp src/ReferenceMarker.cpp)
+    src/main.cpp src/Shader.cpp src/Mesh.cpp src/Hud.cpp src/Road.cpp src/ReferenceMarker.cpp)
 target_link_libraries(synthwave_drive PRIVATE synthwave_core OpenGL::GL glfw GLEW::GLEW)
 target_compile_definitions(synthwave_drive PRIVATE GLFW_INCLUDE_NONE)
 if(APPLE)

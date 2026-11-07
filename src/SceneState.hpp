@@ -12,6 +12,9 @@ enum class CameraMode { Follow, Presentation };
 struct InputState {
     float steering = 0;
     float speedAdjustment = 0;
+    float orbitHorizontal = 0, orbitVertical = 0, zoom = 0;
+    float mouseDx = 0, mouseDy = 0, scroll = 0;
+    bool pause = false, palette = false, help = false;
     bool reset = false;
     bool changeCamera = false;
     bool toggleBloom = false;
@@ -19,6 +22,8 @@ struct InputState {
 };
 struct SceneState {
     double elapsedTime = 0;
+    float orbitYaw = 0.5f, orbitPitch = 0.4f, orbitRadius = 14.0f;
+    bool paused = false, alternatePalette = false, showHelp = true;
     float speed = initialSpeed;
     float carX = 0;               // Car module will be the sole writer.
     float steeringTilt = 0;       // Radians; Car module will be the sole writer.
@@ -33,6 +38,14 @@ inline float frameStep(double elapsed) {
 inline void updateScene(SceneState& scene, const InputState& input, float dt) {
     if (input.reset) { scene=SceneState{}; return; }
     scene.elapsedTime+=dt;
+    if (input.pause) scene.paused = !scene.paused;
+    if (input.palette) scene.alternatePalette = !scene.alternatePalette;
+    if (input.help) scene.showHelp = !scene.showHelp;
+    if (input.orbitHorizontal || input.orbitVertical || input.zoom || input.mouseDx || input.mouseDy || input.scroll)
+        scene.camera = CameraMode::Presentation;
+    scene.orbitYaw = std::remainder(scene.orbitYaw + input.orbitHorizontal*dt + input.mouseDx*0.005f, 6.2831853f);
+    scene.orbitPitch = std::clamp(scene.orbitPitch + input.orbitVertical*dt - input.mouseDy*0.005f, 0.08f, 1.4f);
+    scene.orbitRadius = std::clamp(scene.orbitRadius + input.zoom*dt*8.0f - input.scroll, 3.0f, 45.0f);
     scene.speed=std::clamp(scene.speed+input.speedAdjustment*speedAcceleration*dt,0.0f,maximumSpeed);
     if (input.changeCamera)
         scene.camera=scene.camera==CameraMode::Follow ? CameraMode::Presentation : CameraMode::Follow;

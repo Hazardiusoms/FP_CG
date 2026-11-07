@@ -22,7 +22,7 @@ void ReferenceMarker::initialize(const std::filesystem::path& directory) {
     glBindVertexArray(0);
 }
 void ReferenceMarker::render(const RenderContext& ctx) const {
-    shader_.use(); shader_.set("uView",ctx.view); shader_.set("uProjection",ctx.projection);
+    shader_.use(); shader_.set("uModel",Mat4::identity()); shader_.set("uView",ctx.view); shader_.set("uProjection",ctx.projection);
     glBindVertexArray(vao_); glDrawArrays(GL_TRIANGLES,0,36); glBindVertexArray(0);
 }
 void ReferenceMarker::shutdown() {

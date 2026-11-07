@@ -1,16 +1,21 @@
 # Credits and AI Use
 
-## Current baseline
+## Code and assets
 
-- The grid and temporary reference geometry are generated in code; no external model, texture, font, or music asset is included.
-- Math conventions build on the team's earlier Assignment 3 work and are implemented here as readable shared helpers with new tests. The Assignment 3 viewer/SMF loader is not part of this final project.
-- Runtime dependencies: OpenGL, GLFW (zlib/libpng license), and GLEW (BSD/MIT-style licenses; see the installed package's license files). These dependencies are linked, not vendored in this handoff.
-- Build tool: CMake. Test/evidence conversion used Python and Pillow locally; neither is needed to build or run the C++ application.
+Geometry, procedural road shaders and the compact HUD glyph arrays are generated in code for this project. No external model, texture, music or font file is included. The reference block is temporary. The instructor supplied the report template and its university logo; these are used only for the course report. Journal works cited in the report provide background; their algorithms are not all implemented.
 
-## AI assistance
+## Dependencies
 
-An AI assistant prepared the project documentation and Almas's initial framework implementation: CMake setup, math/state/input helpers, shader loader, camera, scrolling road, reference geometry, tests, and handoff notes. It also ran the documented local build and validation checks. Almas must review, understand, and be able to explain the implementation before submission.
+- GLFW: https://www.glfw.org/ — zlib/libpng license; window and input handling.
+- GLEW: https://glew.sourceforge.net/ — modified BSD/Mesa/MIT notices apply to its components; retain the package license notices if vendoring.
+- OpenGL: platform graphics API; https://www.khronos.org/opengl/ .
+- CMake: https://cmake.org/ — BSD 3-Clause license; build tool.
+- Python, Pillow and document tools were used for local evidence/report preparation, not as application runtime dependencies.
 
-AI did not create Git commits, push, open pull requests, or otherwise publish repository changes. Each member performs these actions personally.
+Libraries are linked from the assignment setup, not copied into this source package. No new runtime dependency is introduced. Record author, original URL and license before adding third-party code or assets; a link alone does not grant permission to redistribute.
 
-Add sources, licenses, and an honest AI-use record when the remaining modules introduce new code or assets.
+## AI Use
+
+OpenAI Codex assisted with Almas's framework implementation, indexed mesh conversion, keyboard/mouse camera, HUD, tests, build checks and report/documentation drafts. The assistant ran the documented local checks. Human revisions for this update have not yet been recorded. Almas and teammates must review and explain their actual contributions and append specific human changes before final submission; this file does not assert that review has already happened.
+
+AI did not stage, commit, push, tag, create PRs or publish anything. The earlier framework commit was made and pushed manually by Almas. This update remains local.
