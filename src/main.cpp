@@ -6,6 +6,7 @@
 #include <iomanip>
 #include "Road.hpp"
 #include "ReferenceMarker.hpp"
+#include "Environment.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -179,19 +180,19 @@ int run(const Options& options) {
     const bool hidden=!options.capture.empty() || !options.smoke.empty();
     Window window(hidden);
     // Declared after Window: all GPU resources are destroyed before the context.
-    Hud hud; double displayedFps=0; Road road; ReferenceMarker reference; Camera camera; SceneState state; RenderContext context;
+    Hud hud; double displayedFps=0; Road road; Environment environment; ReferenceMarker reference; Camera camera; SceneState state; RenderContext context;
     const fs::path shaders=options.assets.empty() ? executableDirectory()/"shaders" : options.assets;
-    road.initialize(shaders); reference.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
+    road.initialize(shaders); environment.initialize(shaders); reference.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
     glfwPollEvents();
     std::cout<<"Shaders: "<<shaders<<"\nW/S speed | C camera | R reset | Esc exit\n"
              <<"Stationary block = temporary size reference. Car/environment/lighting are pending.\n";
 
     auto update=[&](const InputState& input,float dt) {
         updateScene(state,input,dt);
-        if(input.reset) { road.reset(); return; }
+        if(input.reset) { road.reset(); environment.reset(); return; }
         // Turar: car.update(dt,input,state) goes here before the camera update.
         road.update(dt,state.paused ? 0.0f : state.speed);
-        // Muslim: environment.update(dt,state.speed) goes here.
+        environment.update(dt,state.paused ? 0.0f : state.speed);
     };
     auto draw=[&]() -> bool {
         int width=0,height=0; glfwGetFramebufferSize(window.handle,&width,&height);
@@ -202,9 +203,10 @@ int run(const Options& options) {
         glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
         glClearColor(0.018f,0.012f,0.040f,1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-        // Muslim: background pass, then restore depth test and depth writes.
+        environment.renderBackground(context);
         road.render(context,state.alternatePalette);
-        // Muslim: mountains. Nursalim/Turar: lit car replaces this reference.
+        environment.renderMountains(context);
+        // Nursalim/Turar: lit car replaces this reference.
         reference.render(context);
         hud.render(context,state,displayedFps);
         checkGl("frame render"); return true;
