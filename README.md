@@ -1,166 +1,59 @@
-
 # Synthwave Drive
 
-> An interactive 3D night drive through a retro-futuristic landscape.
+Computer Graphics Fundamentals final project · Topic 13 · C++17 / OpenGL.
 
-A neon car faces a striped sun on the horizon. A glowing grid scrolls beneath it, low-poly mountains frame the road, and the player controls steering, speed, and the camera.
+**Current status: Almas's framework prototype, updated against the final rubric.** The scrolling road, indexed mesh utility, follow/orbit camera, keyboard/mouse input, FPS overlay and scene controls work locally. The box is a size reference, not the final car. Car hierarchy, mountains, sky/sun and two-light shading remain team tasks.
 
-**Computer Graphics Fundamentals · Final Project · Topic 13**
+![Current running framework](docs/evidence/almas-follow.png)
 
-## Project Goals
+## Build and run
 
-- Build a coherent interactive scene that satisfies the required Topic 13 features.
-- Demonstrate transformations, camera projection, procedural geometry, shader-based visuals, and lighting.
-- Keep the application modular so four team members can develop and integrate their contributions.
-- Deliver a reproducible build, documented implementation, and clear live demonstration.
+Requires CMake 3.19+, a C++17 compiler, OpenGL and the assignment setup's GLFW/GLEW. Tested locally on Apple M3 Pro, Apple Clang 17, OpenGL 4.1 Metal, GLFW 3.5.1 and GLEW 2.3.1. Windows/Linux and the TA computer have not yet been verified. No GLM, font or new runtime dependency is required.
 
-## Planned Experience
-
-| Feature | Description |
-| --- | --- |
-| Scrolling grid | An endless neon road animated with repeating UV coordinates and a speed-dependent shader offset. |
-| Low-poly mountains | Angular mountain sections with purple and pink materials, recycled ahead of the camera for an endless landscape. |
-| Striped sun and sky | A smooth night-sky gradient with a warm circular sun and horizontal stripe masks. |
-| Steerable neon car | A hierarchical 3D car that moves within road boundaries, tilts while steering, and uses emissive details. |
-
-### Supporting Features
-
-- **Speed control** — acceleration and braking drive road movement, wheel rotation, and environment motion.
-- **Camera modes** — a follow camera and a second presentation view with resize-aware projection.
-- **Hierarchical model** — wheels, headlights, and decorative parts inherit the car body transform while retaining local animation.
-- **Lighting and materials** — ambient, diffuse, specular, and emissive materials distinguish the car and its neon elements.
-- **Controls and reset** — on-screen hints and a reset action simplify demonstrations.
-
-## Stretch Goals
-
-These effects will be attempted only after the core scene is complete and stable:
-
-- **Bloom** — extract and blur bright regions, then combine them with the original frame.
-- **CRT scanlines** — apply a subtle switchable screen-space scanline effect.
-- **Instanced roadside palms** — a reserve goal if the selected effects prove practical within the schedule.
-
-Only completed and verified features will be presented as implemented.
-
-## Technology
-
-| Layer | Planned Technology |
-| --- | --- |
-| Application | C++17 |
-| Rendering | OpenGL 3.3 Core, GLSL |
-| Window and input | GLFW |
-| OpenGL loading | GLEW |
-| Build system | CMake |
-
-Additional dependencies, supported platforms, and tested versions will be documented once implementation begins.
-
-## Architecture
-
-The application will use one window, one main loop, and shared scene state:
-
-```text
-main.cpp          initialization, input dispatch, frame timing, render loop
-SceneState        speed, car position, camera selection, effect toggles
-Camera            view/projection matrices and camera transitions
-Road              ground geometry and animated grid coordinates
-Car               model parts, transforms, steering, wheel animation
-Environment       mountain sections, sky, striped sun
-Lighting          light parameters and shared material settings
-PostProcessing    framebuffer resources, bloom, CRT passes
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+./build/synthwave_drive
 ```
 
-### Integration Conventions
+On this Mac, double-click `Run.command`. For a fresh development Mac only, Homebrew can install `cmake glfw glew`; the TA must be able to use the established assignment setup. If needed, configure with `-DCMAKE_PREFIX_PATH="$(brew --prefix)"`. Multi-configuration generators place the executable under `build/Release`.
 
-- **Y** points upward, **X** is the lateral axis, and the road extends along **Z**.
-- The car remains near a fixed longitudinal position; scrolling geometry and UVs create forward motion.
-- The main loop provides `deltaTime` and input to the modules.
-- All 3D modules use the same camera and projection.
-- Modules share agreed interfaces and do not create their own window or event loop.
-- Asset paths must work from a fresh checkout without personal absolute paths.
+Shaders are copied beside the executable on every build; rebuild after edits. Paths are resolved relative to the executable, not the working directory. `--assets DIR` overrides the shader directory. macOS uses a 4.1 core context with GLSL 330-compatible shader features.
 
-## Frame Sequence
+## Controls
 
-1. Read input and calculate elapsed frame time.
-2. Update speed, steering, wheel rotation, camera, and environment movement.
-3. Render the sky and sun, followed by the road, mountains, and car with correct depth handling.
-4. Apply enabled post-processing effects.
-5. Draw control hints and present the frame.
+- W/S: increase/decrease road speed, from 0 to 40.
+- C: follow/orbit camera.
+- I/J/K/L or right-mouse drag: orbit; U/O or scroll: zoom. Orbit input automatically selects orbit mode.
+- Space: pause/resume road motion. Camera controls remain available.
+- G: switch neon palette.
+- H: show/hide help; live FPS remains visible.
+- R: reset speed, camera, palette, pause and road phase.
+- Esc: exit.
 
-## Planned Repository Structure
+A/D and bloom/CRT keys are reserved for future modules and do not currently change the scene. Live FPS updates every half-second. Deterministic single-frame screenshots display `FPS: --` because they do not measure real-time throughput.
 
-```text
-synthwave_drive/
-├── README.md
-├── PLAN.md
-├── CMakeLists.txt
-├── CREDITS.md
-├── src/
-│   ├── main.cpp
-│   ├── SceneState.*
-│   ├── Camera.*
-│   ├── Road.*
-│   ├── Car.*
-│   ├── Environment.*
-│   ├── Lighting.*
-│   └── PostProcessing.*
-├── shaders/
-├── assets/
-└── docs/
-    ├── report/
-    ├── slides/
-    └── demo/
+## Verify locally
+
+```sh
+ctest --test-dir build --output-on-failure
+./build/synthwave_drive --smoke-test build/smoke
+./build/synthwave_drive --benchmark 2400
 ```
 
-## Planned Controls
+There are 40 CPU checks. GPU smoke checks cover road motion/repetition, camera, input, reset, resizing, mouse orbit, pause, palette and GL errors. A graphical desktop is required. Benchmarking discards 60 warm-up frames and times event polling, update, rendering, swap and GPU completion with vsync disabled. This is local prototype throughput, not a guarantee for the full scene or TA hardware.
 
-| Key | Action |
-| --- | --- |
-| `A / D` or `Left / Right` | Steer the car |
-| `W / S` | Increase or decrease speed |
-| `C` | Change camera mode |
-| `B` | Toggle bloom, if implemented |
-| `T` | Toggle CRT scanlines, if implemented |
-| `R` | Reset the scene |
-| `Esc` | Exit |
+## Team and documentation
 
-The final control mapping will be verified against the running application.
+- Almas Alkhan — framework, road, cameras, integration; SE-2425.
+- Turar Nurbauli — steerable car and hierarchical transforms.
+- Muslim Syzdykov — mountains, sky and striped sun.
+- Nursalim Onalbayev — two-light shading, effects and validation.
 
-## Quality and Validation
+[AGENTS.md](AGENTS.md) retains the complete team handbook and detailed individual instructions. [PLAN.md](PLAN.md) gives the Weeks 8–10 schedule. [Requirements](docs/requirements.md) records current gaps. [Progress](docs/progress/almas.md) records checks. [Report](docs/report/Synthwave_Drive_Progress_Report.pdf) describes the current implementation, with remaining work explicitly marked. [Demo plan](docs/demo-script.md) and [slide plan](docs/presentation-plan.md) are preparation guides, not completed final deliverables.
 
-Before submission, the team will verify that:
+## AI Use
 
-- All four Topic 13 core features work together in one scene.
-- Grid repetition and environment recycling have no visible discontinuities.
-- Steering stays inside the road and child objects follow the car correctly.
-- Movement is consistent across frame rates.
-- Camera changes and window resizing preserve correct rendering.
-- Disabling post-processing leaves a fully working core scene.
-- Frame-rate measurements include the test computer, resolution, and effect settings.
-- A fresh checkout builds and runs on a second team member's computer.
+OpenAI Codex assisted with Almas's framework code, camera/input/indexed rendering, HUD, tests, documentation and report drafting. It ran local build and GPU checks. Human implementation revisions for this update have not been recorded yet; each member must review, understand, test and document their actual changes before submission. No teammate implementation or review is claimed. See [CREDITS.md](CREDITS.md) for dependencies and attribution.
 
-The topic document also refers to general requirements **R1–R8** without defining them. The full requirements will be obtained and mapped to the implementation before final compliance is confirmed.
-
-## Team
-
-| Member | Responsibilities |
-| --- | --- |
-| **Almas Alkhan** | Application framework, scrolling road, camera, integration |
-| **Turar Nurbauli** | Car geometry, steering, hierarchical transforms, wheel animation |
-| **Muslim Syzdykov** | Mountains, sky, striped sun, environment composition |
-| **Nursalim Onalbayev** | Lighting, post-processing, validation coordination |
-
-Each member will contribute implementation, documentation, testing, and an explanation of their own code. The schedule, milestones, and individual deliverables are maintained in [`PLAN.md`](PLAN.md).
-
-## Final Deliverables
-
-- Source repository with tested setup instructions.
-- PDF report covering implementation, contributions, algorithms, screenshots, validation, and limitations.
-- Presentation slides.
-- Demonstration video showing the implemented features and controls.
-
-The topic document requires submission three days before the final exam. The exact date and Moodle upload requirements must be confirmed against the course schedule.
-
-## Credits and AI Use
-
-Original geometry and procedural visuals are preferred. External assets, libraries, or adapted code will be credited in `CREDITS.md` and the report, including applicable licenses.
-
-AI assistance has been used to draft and organize this project specification and development plan. Any AI assistance used during implementation will also be documented. Every team member remains responsible for checking, understanding, and explaining the code they submit.
+**Publication is human-only. AI must not stage, commit, push, tag, create PRs, merge or write to GitHub.**
