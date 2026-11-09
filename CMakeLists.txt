@@ -7,10 +7,10 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(GLEW REQUIRED)
 
-add_library(synthwave_core src/Camera.cpp)
+add_library(synthwave_core src/Camera.cpp src/CarModel.cpp)
 target_include_directories(synthwave_core PUBLIC src)
 add_executable(synthwave_drive
-    src/main.cpp src/Shader.cpp src/Mesh.cpp src/Hud.cpp src/Road.cpp src/ReferenceMarker.cpp
+    src/main.cpp src/Shader.cpp src/Mesh.cpp src/Hud.cpp src/Road.cpp src/Car.cpp
     src/Environment.cpp)
 target_link_libraries(synthwave_drive PRIVATE synthwave_core OpenGL::GL glfw GLEW::GLEW)
 target_compile_definitions(synthwave_drive PRIVATE GLFW_INCLUDE_NONE)
@@ -36,6 +36,9 @@ if(BUILD_TESTING)
     add_executable(core_tests tests/core_tests.cpp)
     target_link_libraries(core_tests PRIVATE synthwave_core)
     add_test(NAME framework_core COMMAND core_tests)
+    add_executable(car_tests tests/car_tests.cpp)
+    target_link_libraries(car_tests PRIVATE synthwave_core)
+    add_test(NAME car_model COMMAND car_tests)
 endif()
 install(TARGETS synthwave_drive RUNTIME DESTINATION bin)
 install(DIRECTORY shaders DESTINATION bin)

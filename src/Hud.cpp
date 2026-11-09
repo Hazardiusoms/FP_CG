@@ -92,7 +92,7 @@ void Hud::render(const RenderContext &ctx, const SceneState &scene, double fps) 
         text(data, "W/S SPEED  SPACE PAUSE  G PALETTE", 26, height - 82 * scale, scale, muted);
         text(data, "C CAMERA  I/J/K/L ORBIT  U/O ZOOM", 26, height - 71 * scale, scale, muted);
         text(data, "RIGHT DRAG ORBIT  SCROLL ZOOM", 26, height - 60 * scale, scale, muted);
-        text(data, "H HIDE HELP  R RESET  ESC EXIT", 26, height - 49 * scale, scale, muted);
+        text(data, "A/D STEER  H HELP  R RESET  ESC EXIT", 26, height - 49 * scale, scale, muted);
     } else
         text(data, "H HELP", 20, height - 20 - 7 * scale, scale, muted);
     const bool depth = glIsEnabled(GL_DEPTH_TEST);

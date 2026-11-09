@@ -2,9 +2,9 @@
 
 Computer Graphics Fundamentals final project · Topic 13 · C++17 / OpenGL.
 
-**Current status: Almas's framework prototype, updated against the final rubric.** The scrolling road, indexed mesh utility, follow/orbit camera, keyboard/mouse input, FPS overlay and scene controls work locally. The box is a size reference, not the final car. Car hierarchy, mountains, sky/sun and two-light shading remain team tasks.
+**Current status: Almas's framework prototype, updated against the final rubric.** The scrolling road, indexed mesh utility, follow/orbit camera, keyboard/mouse input, FPS overlay and scene controls work locally. The steerable retro car and hierarchical wheels now replace the reference box; Muslim's environment is integrated. Two-light shading remains pending, with temporary preview materials on the car.
 
-![Current running framework](docs/evidence/almas-follow.png)
+![Integrated car and environment](docs/evidence/turar-car-follow.png)
 
 ## Build and run
 
@@ -36,9 +36,7 @@ speed in km/h (one scene unit = one metre), speed bars, camera mode, pause and
 live FPS. H hides help; small windows automatically use compact hints.
 
 Actual captures: [follow](docs/evidence/almas-road-finished-follow.png) and
-[orbit](docs/evidence/almas-road-finished-orbit.png). The box remains a temporary
-size reference: this update completes road presentation, not teammates' car,
-environment or common lighting implementations.
+[orbit](docs/evidence/almas-road-finished-orbit.png). The road is integrated with the car and environment; common lighting remains pending.
 
 ## Controls
 
@@ -52,7 +50,7 @@ environment or common lighting implementations.
 - R: reset speed, camera, palette, pause and road phase.
 - Esc: exit.
 
-A/D and bloom/CRT keys are reserved for future modules and do not currently change the scene. Live FPS updates every half-second. Deterministic single-frame screenshots display `FPS: --` because they do not measure real-time throughput.
+A/D or Left/Right steers the car. Pause stops wheel rotation with the road; reset restores the car and follow camera. Bloom/CRT remain reserved. Live FPS updates every half-second. Deterministic single-frame screenshots display `FPS: --` because they do not measure real-time throughput.
 
 ## Verify locally
 
@@ -78,3 +76,9 @@ There are 44 CPU checks. GPU smoke checks cover road motion/repetition, camera, 
 OpenAI Codex assisted with Almas's framework code, camera/input/indexed rendering, HUD, tests, documentation and report drafting. It ran local build and GPU checks. Human implementation revisions for this update have not been recorded yet; each member must review, understand, test and document their actual changes before submission. No teammate implementation or review is claimed. See [CREDITS.md](CREDITS.md) for dependencies and attribution.
 
 **Publication is human-only. AI must not stage, commit, push, tag, create PRs, merge or write to GitHub.**
+
+## Car integration
+
+Turar's retro sports car includes a wedge body, sloped canopy, segmented lights, neon trim, spoiler and rotating five-spoke wheels. It uses shared Mesh/Math/Input services. Car movement runs before updateFollowCamera so the new tracking follows steering. The preview shader is not the final two-light model. [Progress and Windows checks](docs/progress/turar.md).
+
+Codex assisted with car geometry, controls, shaders, tests and integration; human review remains pending. Two CTest suites cover the 44 framework checks and car model checks; OpenGL smoke checks also exercise steering limits, follow tracking and reset.
