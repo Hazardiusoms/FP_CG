@@ -5,7 +5,7 @@
 #include "Hud.hpp"
 #include <iomanip>
 #include "Road.hpp"
-#include "ReferenceMarker.hpp"
+#include "Car.hpp"
 #include "Environment.hpp"
 #include <filesystem>
 #include <fstream>
@@ -181,17 +181,17 @@ int run(const Options& options) {
     const bool hidden=!options.capture.empty() || !options.smoke.empty();
     Window window(hidden);
     // Declared after Window: all GPU resources are destroyed before the context.
-    Hud hud; double displayedFps=0; Road road; Environment environment; ReferenceMarker reference; Camera camera; SceneState state; RenderContext context;
+    Hud hud; double displayedFps=0; Road road; Environment environment; Car car; Camera camera; SceneState state; RenderContext context;
     const fs::path shaders=options.assets.empty() ? executableDirectory()/"shaders" : options.assets;
-    road.initialize(shaders); environment.initialize(shaders); reference.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
+    road.initialize(shaders); environment.initialize(shaders); car.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
     glfwPollEvents();
     std::cout<<"Shaders: "<<shaders<<"\nW/S speed | C camera | R reset | Esc exit\n"
-             <<"Stationary block = temporary size reference. Car/environment/lighting are pending.\n";
+             <<"A/D or arrows: steer. Car preview materials; common lighting is pending.\n";
 
     auto update=[&](const InputState& input,float dt) {
         updateScene(state,input,dt);
-        if(input.reset) { road.reset(); environment.reset(); return; }
-        // Turar: car.update(dt,input,state) goes here before the camera update.
+        if(input.reset) { road.reset(); environment.reset(); car.reset(state); return; }
+        car.update(dt,input,state);
         updateFollowCamera(state,dt);
         road.update(dt,state.paused ? 0.0f : state.speed);
         environment.update(dt,state.paused ? 0.0f : state.speed);
@@ -208,8 +208,8 @@ int run(const Options& options) {
         environment.renderBackground(context);
         road.render(context,state.alternatePalette);
         environment.renderMountains(context);
-        // Nursalim/Turar: lit car replaces this reference.
-        reference.render(context);
+        // Preview materials until the common Lighting service is integrated.
+        car.render(context,state);
         hud.render(context,state,displayedFps);
         checkGl("frame render"); return true;
     };
@@ -226,6 +226,19 @@ int run(const Options& options) {
             writeFrame(options.smoke/name,frame); return frame;
         };
         const Frame initial=capture("follow.ppm");
+        InputState steer; steer.steering=1;
+        update(steer,0.05f);
+        require(state.followX>0 && state.followX<state.carX,"Follow camera must update after car steering");
+        for(int i=0;i<100;++i) update(steer,0.05f);
+        require(state.carX==CarModel::lateralLimit,"Car right boundary failed");
+        require(capture("car-right.ppm").rgb!=initial.rgb,"Car steering did not change frame");
+        steer.steering=-1;
+        for(int i=0;i<100;++i) update(steer,0.05f);
+        require(state.carX==-CarModel::lateralLimit,"Car left boundary failed");
+        capture("car-left.ppm");
+        InputState carReset; carReset.reset=true; update(carReset,0);
+        require(state.followX==0,"Car reset must clear follow-camera tracking");
+        require(capture("car-reset.ppm").rgb==initial.rgb,"Car reset did not restore frame");
         road.update(0.02f,state.speed);
         require(capture("moving.ppm").rgb!=initial.rgb,"Grid does not move");
         road.reset(); road.update(1.0f,12.0f);
@@ -304,7 +317,7 @@ int run(const Options& options) {
             std::ostringstream title;
             title<<"Synthwave Drive | FPS "<<std::fixed<<std::setprecision(1)<<displayedFps<<" | W/S: speed "<<static_cast<int>(state.speed)
                  <<" | C: "<<(state.camera==CameraMode::Follow ? "Follow" : "Presentation")
-                 <<" | R: reset | Esc: exit | Temporary block";
+                 <<" | R: reset | Esc: exit | A/D: steer";
             glfwSetWindowTitle(window.handle,title.str().c_str()); nextTitle=now+0.2;
         }
     }
