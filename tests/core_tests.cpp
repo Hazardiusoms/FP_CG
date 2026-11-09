@@ -75,11 +75,21 @@ void cameraTests() {
     check(camera.update(s,1600,900,ctx),"Camera refused valid dimensions");
     check(close(ctx.projection.at(1,1)/ctx.projection.at(0,0),1600.0f/900),"Wrong aspect ratio");
     check(close(dot(ctx.cameraForward,ctx.cameraRight),0)&&close(length(ctx.cameraUp),1),"Camera basis invalid");
+    SceneState follow30,follow144; follow30.carX=follow144.carX=2;
+    for(int i=0;i<30;++i) updateFollowCamera(follow30,1.0f/30);
+    for(int i=0;i<144;++i) updateFollowCamera(follow144,1.0f/144);
+    check(close(follow30.followX,follow144.followX),"Follow damping depends on frame rate");
+    check(follow30.followX>1.9f && follow30.followX<2.0f,"Follow tracking overshoots or fails to converge");
+    const float before=follow30.followX; updateFollowCamera(follow30,0);
+    check(before==follow30.followX,"Zero time changes follow camera");
+    InputState reset;reset.reset=true;updateScene(follow30,reset,0);
+    check(follow30.followX==0,"Reset leaves camera tracking offset");
     const Vec3 first=ctx.cameraPosition;
+
     s.camera=CameraMode::Presentation; camera.update(s,900,1600,ctx);
     check(length(ctx.cameraPosition-first)>1,"Second camera identical");
     check(!camera.update(s,0,0,ctx),"Zero framebuffer accepted");
-    s=SceneState{}; s.carX=2; camera.update(s,1600,900,ctx);
+    s=SceneState{}; s.carX=2; s.followX=2; camera.update(s,1600,900,ctx);
     check(ctx.cameraPosition.x>0,"Follow camera ignores future car state");
 }
 void newControlTests(){

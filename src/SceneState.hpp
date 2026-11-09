@@ -26,6 +26,7 @@ struct SceneState {
     bool paused = false, alternatePalette = false, showHelp = true;
     float speed = initialSpeed;
     float carX = 0;               // Car module will be the sole writer.
+    float followX = 0;           // Smoothed camera tracking, owned by the framework.
     float steeringTilt = 0;       // Radians; Car module will be the sole writer.
     CameraMode camera = CameraMode::Follow;
     bool bloomEnabled = false;   // Reserved; no effect implemented in this build.
@@ -51,7 +52,12 @@ inline void updateScene(SceneState& scene, const InputState& input, float dt) {
         scene.camera=scene.camera==CameraMode::Follow ? CameraMode::Presentation : CameraMode::Follow;
     // Effect requests are intentionally not enabled before those modules exist.
 }
-inline double advanceGridOffset(double offset, float speed, float dt) {
+// Exponential tracking gives the same response at different frame rates.
+inline void updateFollowCamera(SceneState& scene, float dt) {
+    scene.followX += (scene.carX-scene.followX)*(1.0f-std::exp(-6.0f*std::max(dt,0.0f)));
+}
+inline double advanceGridOffset
+(double offset, float speed, float dt) {
     const double result=std::fmod(offset+static_cast<double>(speed)*dt/gridWorldSize,1.0);
     return result<0 ? result+1.0 : result;
 }
