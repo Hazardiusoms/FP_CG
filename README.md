@@ -20,7 +20,28 @@ On this Mac, double-click `Run.command`. For a fresh development Mac only, Homeb
 
 Shaders are copied beside the executable on every build; rebuild after edits. Paths are resolved relative to the executable, not the working directory. `--assets DIR` overrides the shader directory. macOS uses a 4.1 core context with GLSL 330-compatible shader features.
 
+## Road and dashboard update — 9 November
+
+The driving surface now has three lanes, six-metre dashed markings, cyan edge lines,
+raised curbs, indexed 3D guardrails, and roadside lamps/reflectors repeating every
+12 metres. Markings, lamps and the surrounding grid scroll toward +Z at the same
+world speed. Reset restores both bounded phases. Shader derivatives filter the
+road markings; the window requests 4x MSAA. Lamp spill is a procedural surface
+pattern, not the team's two-light Phong system or bloom.
+
+The follow camera uses exponentially damped lateral tracking. Integration must
+call `updateFollowCamera(state, dt)` after the car writes `carX`; reset clears
+`followX`. No Road or Camera method signatures changed. The dashboard shows
+speed in km/h (one scene unit = one metre), speed bars, camera mode, pause and
+live FPS. H hides help; small windows automatically use compact hints.
+
+Actual captures: [follow](docs/evidence/almas-road-finished-follow.png) and
+[orbit](docs/evidence/almas-road-finished-orbit.png). The box remains a temporary
+size reference: this update completes road presentation, not teammates' car,
+environment or common lighting implementations.
+
 ## Controls
+
 
 - W/S: increase/decrease road speed, from 0 to 40.
 - C: follow/orbit camera.
@@ -41,7 +62,7 @@ ctest --test-dir build --output-on-failure
 ./build/synthwave_drive --benchmark 2400
 ```
 
-There are 40 CPU checks. GPU smoke checks cover road motion/repetition, camera, input, reset, resizing, mouse orbit, pause, palette and GL errors. A graphical desktop is required. Benchmarking discards 60 warm-up frames and times event polling, update, rendering, swap and GPU completion with vsync disabled. This is local prototype throughput, not a guarantee for the full scene or TA hardware.
+There are 44 CPU checks. GPU smoke checks cover road motion/repetition, camera, input, reset, resizing, mouse orbit, pause, palette and GL errors. A graphical desktop is required. Benchmarking discards 60 warm-up frames and times event polling, update, rendering, swap and GPU completion with vsync disabled. This is local prototype throughput, not a guarantee for the full scene or TA hardware.
 
 ## Team and documentation
 

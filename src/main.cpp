@@ -100,6 +100,7 @@ public:
 #endif
         glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_DEPTH_BITS,24);
+        glfwWindowHint(GLFW_SAMPLES,4);
         glfwWindowHint(GLFW_VISIBLE,hidden ? GLFW_FALSE : GLFW_TRUE);
         handle=glfwCreateWindow(1280,720,"Synthwave Drive | Almas framework",nullptr,nullptr);
         if(!handle) { glfwTerminate(); throw std::runtime_error("Cannot create an OpenGL window"); }
@@ -191,6 +192,7 @@ int run(const Options& options) {
         updateScene(state,input,dt);
         if(input.reset) { road.reset(); environment.reset(); return; }
         // Turar: car.update(dt,input,state) goes here before the camera update.
+        updateFollowCamera(state,dt);
         road.update(dt,state.paused ? 0.0f : state.speed);
         environment.update(dt,state.paused ? 0.0f : state.speed);
     };
@@ -226,9 +228,14 @@ int run(const Options& options) {
         const Frame initial=capture("follow.ppm");
         road.update(0.02f,state.speed);
         require(capture("moving.ppm").rgb!=initial.rgb,"Grid does not move");
-        road.reset(); road.update(1.0f,gridWorldSize);
+        road.reset(); road.update(1.0f,12.0f);
         require(capture("wrapped.ppm").rgb==initial.rgb,"Whole UV period does not repeat exactly");
+        road.update(10.0f,0.0f);
+        require(capture("stopped.ppm").rgb==initial.rgb,"Zero speed moves road furniture or markings");
+        road.update(12000.0f,12.0f);
+        require(capture("long-run.ppm").rgb==initial.rgb,"Long-run road cycle drifts");
         window.input.set(Key::C,true); update(window.input.consume(),0);
+
         require(state.camera==CameraMode::Presentation,"Camera key did not switch view");
         const Frame presentation=capture("presentation.ppm");
         require(presentation.rgb!=initial.rgb,"Camera views are identical");
@@ -253,7 +260,10 @@ int run(const Options& options) {
         require(road.offset()==beforePause,"Paused road moved");
         InputState palette;palette.palette=true;update(palette,0);
         require(capture("palette.ppm").rgb!=orbited.rgb,"Palette did not change render");
+        glfwSetWindowSize(window.handle,320,240); glfwPollEvents();
+        capture("small.ppm");
         const auto savedProjection=context.projection;
+
         require(!camera.update(state,0,0,context),"Zero-sized framebuffer accepted");
         require(context.projection.at(0,0)==savedProjection.at(0,0),"Zero size changed projection");
         checkGl("smoke completion");

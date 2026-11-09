@@ -1,0 +1,6 @@
+OpenGL: 4.1 Metal - 90.5
+Renderer: Apple M3 Pro
+Shaders: "/Users/almaslhan/Desktop/FP_CG/build/shaders"
+W/S speed | C camera | R reset | Esc exit
+Stationary block = temporary size reference. Car/environment/lighting are pending.
+BENCHMARK width=1280 height=720 samples=600 avg_fps=725.188 p95_ms=3.78621 worst_ms=18.298 vsync=off glFinish=on
