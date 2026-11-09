@@ -16,9 +16,10 @@ const vec3 ZENITH_COLOR = vec3(0.02, 0.00, 0.12);
 const vec3 HORIZON_COLOR = vec3(0.45, 0.08, 0.35);
 const vec3 SUN_TOP = vec3(1.00, 0.85, 0.35);
 const vec3 SUN_BOTTOM = vec3(1.00, 0.25, 0.45);
+const vec3 GLOW_COLOR = vec3(1.00, 0.35, 0.45);
 
 void main() {
-    // Ray direction from the shared camera basis; camera translation is ignored, so the sky is distant.
+    // Ray from the shared camera basis. Camera translation is ignored, so the sky stays distant.
     vec3 dir = normalize(uCameraForward
         + uCameraRight * (vNdc.x * uAspect * uTanHalfFov)
         + uCameraUp * (vNdc.y * uTanHalfFov));
@@ -26,20 +27,23 @@ void main() {
     float horizon = clamp(dir.y * 3.0 + 0.5, 0.0, 1.0);
     vec3 color = mix(HORIZON_COLOR, ZENITH_COLOR, horizon);
 
-    // Circular sun disc: angular distance from the sun direction, measured in radians.
-    float angle = acos(clamp(dot(dir, normalize(uSunDirection)), -1.0, 1.0));
-    float disc = 1.0 - smoothstep(uSunRadius * 0.98, uSunRadius, angle);
+    vec3 sunDir = normalize(uSunDirection);
+    float angle = acos(clamp(dot(dir, sunDir), -1.0, 1.0));
+
+    // Soft glow outside the disc; it fades with angular distance from the sun edge.
+    float outside = max(angle - uSunRadius, 0.0);
+    color += GLOW_COLOR * 0.30 * exp(-outside * 9.0);
+
+    // Disc coordinate: y = -1 at the bottom edge, +1 at the top edge, measured on the camera's up axis.
+    float y = (dot(dir, uCameraUp) - dot(sunDir, uCameraUp)) / uSunRadius;
+    float disc = 1.0 - smoothstep(uSunRadius * 0.99, uSunRadius, angle);
     if (disc > 0.0) {
-        // Vertical position inside the disc: 0 at the bottom edge, 1 at the top.
-        float sunUp = dot(normalize(uSunDirection), uCameraUp);
-        float rayUp = dot(dir, uCameraUp);
-        float vertical = clamp(0.5 + (rayUp - sunUp) / (uSunRadius * 2.0), 0.0, 1.0);
-        vec3 sunColor = mix(SUN_BOTTOM, SUN_TOP, vertical);
-        // Horizontal stripes cut the lower half of the disc, the classic synthwave look.
-        float stripe = step(0.45, fract(vertical * uStripeCount));
-        float mask = mix(1.0, stripe, step(vertical, 0.5));
+        vec3 sunColor = mix(SUN_BOTTOM, SUN_TOP, clamp(y * 0.5 + 0.5, 0.0, 1.0));
+        // Horizontal bands only in the lower half of the disc. Gaps show the sky behind them.
+        float lower = step(y, 0.0);
+        float band = step(0.35, fract(-y * uStripeCount));
+        float mask = mix(1.0, band, lower);
         color = mix(color, sunColor, disc * mask);
-        color = mix(color, ZENITH_COLOR, disc * (1.0 - mask));
     }
 
     fragColor = vec4(color, 1.0);
