@@ -4,7 +4,7 @@ Computer Graphics Fundamentals final project · Topic 13 · C++17 / OpenGL.
 
 **Current status: Almas's framework prototype, updated against the final rubric.** The scrolling road, indexed mesh utility, follow/orbit camera, keyboard/mouse input, FPS overlay and scene controls work locally. The steerable retro car and hierarchical wheels now replace the reference box; Muslim's environment is integrated. Two-light shading remains pending, with temporary preview materials on the car.
 
-![Integrated car and environment](docs/evidence/turar-car-follow.png)
+![Integrated car and environment](docs/evidence/09.11.2026-21:54-game-view.png)
 
 ## Build and run
 
