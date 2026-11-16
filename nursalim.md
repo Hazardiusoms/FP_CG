@@ -1,0 +1,56 @@
+# Nursalim Onalbayev — lighting and effects progress
+
+Branch: `nursalim/lighting-effects` (from `main` at f89b03b). Status: first lighting pass written and checked on Linux (software OpenGL) and then built and run by Nursalim on Windows. Not yet checked on macOS or the TA computer; no teammate review yet.
+
+## Done in this pass
+
+- `src/LightingModel.hpp`: CPU-only light description (sun + moving point light, orbit, light clock, palette colours).
+- `src/Lighting.hpp/.cpp`: lit shader owner; `update`, `reset`, `beginLit`, `bindMaterial`, `drawLightMarker`.
+- `shaders/lit.vert`, `shaders/lit.frag`: per-fragment Blinn-Phong, two lights, world space.
+- Car integration through the existing `Car::drawParts` hook in `main.cpp` (the old `Car::render` preview path is kept but no longer called).
+- F toggles the moving light (`Key::F`, `InputState::toggleLight`, `SceneState::movingLightEnabled`). HUD hint line updated.
+- `tests/lighting_tests.cpp` (new CTest `lighting_model`) and extra GPU smoke checks in `main.cpp`.
+
+## Shared files touched (please confirm with the owners)
+
+| File | Change | Owner |
+| --- | --- | --- |
+| `src/CarModel.hpp/.cpp` | `CarMaterial` gets `specular` and `shininess` (defaults 0.35 / 32); paint, glass, rubber and metal set explicitly | Turar |
+| `src/Input.hpp`, `src/SceneState.hpp` | `Key::F`, `toggleLight`, `movingLightEnabled` | Almas |
+| `src/main.cpp`, `CMakeLists.txt`, `src/Hud.cpp` | Lighting lifecycle calls, F key, smoke checks, build entries, hint text (the "SCROLL ZOOM" hint was shortened to make room for F) | Almas |
+
+## Checks actually run on Linux (Ubuntu 24.04, Xvfb, Mesa llvmpipe 25.2, OpenGL 3.3 core, Release)
+
+| Check | Result |
+| --- | --- |
+| `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build` | passed (only a pre-existing `Mesh.cpp` indentation warning) |
+| `ctest --test-dir build --output-on-failure` | passed, 3 of 3 suites (framework_core, car_model, lighting_model) |
+| `synthwave_drive --smoke-test` under Xvfb | passed, including the new light toggle / motion / pause / reset checks |
+| Normals on all car parts (non-uniform scale, tilt, rotation) | passed (every triangle, `lighting_model`) |
+| `synthwave_drive --benchmark 300`, 1280x720 | 26.4 avg FPS with lighting vs 27.5 without, **on a CPU software renderer** |
+
+The Linux benchmark is not evidence for R7: it runs on a virtual Xeon with llvmpipe, not a GPU. It only shows the lit shader adds little cost relative to the rest of the frame there.
+
+## Checks run by Nursalim on Windows (Release, GLFW from vcpkg, local GLEW)
+
+| Check | Result |
+| --- | --- |
+| `ctest --test-dir build -C Release --output-on-failure` | passed, 3 of 3 suites |
+| Manual run of `synthwave_drive.exe` | window opens, lit car visible, HUD shows the F hint, FPS about 144 with VSync on |
+| `synthwave_drive.exe --benchmark 300` | `width=1280 height=720 samples=300 avg_fps=440.382 p95_ms=3.241 worst_ms=4.3196 vsync=off glFinish=on` |
+
+GPU, CPU and driver for this run: GeForce RTX 4060, Intel I5-13240H. The benchmark was run once with the lighting build; no run without lighting was made on this machine, so no before/after cost is claimed.
+
+Evidence: [follow camera](../evidence/nursalim-lit-car-follow.png), [light on](../evidence/nursalim-light-on.png), [light off](../evidence/nursalim-light-off.png) (smoke-test frames, software renderer).
+
+## Not checked / limitations
+
+- macOS and the TA computer; behaviour of F, G, Space and R beyond a quick manual look.
+- Only the car is lit by the new model. Road, mountains, sky and palms keep their own shading; the road does not show the moving light's pool yet.
+- Specular highlights are subtle on the dark paint; tuning by eye on a real display is still needed.
+- Bloom and CRT are not started (Core and R1–R8 come first).
+- Material values for the car were chosen without Turar's review.
+
+## Sources and AI help
+
+Blinn-Phong is the standard model from the course material; no third-party code or assets were added. Claude (Anthropic) wrote the first version of the code, tests and this note. Nursalim must still review, run and understand every file before committing.
