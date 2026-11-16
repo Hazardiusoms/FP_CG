@@ -17,6 +17,8 @@ public:
     void set(const char* name,const Mat3& value) const;
     void set(const char* name,Vec3 value) const;
     void set(const char* name,float value) const;
+    // Sampler uniforms need glUniform1i; kept separate so float uniforms never get an int upload.
+    void setInt(const char* name,int value) const;
 private:
     GLint location(const char* name) const;
     GLuint program_=0;
