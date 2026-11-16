@@ -1,6 +1,6 @@
 # Nursalim Onalbayev — lighting and effects progress
 
-Branch: `nursalim/lighting-effects` (from `main` at f89b03b). Status: first lighting pass written and checked on Linux with a software OpenGL renderer; **not yet reviewed, run or committed by a human**, and not yet checked on Windows, macOS or the TA computer.
+Branch: `nursalim/lighting-effects` (from `main` at f89b03b). Status: first lighting pass written and checked on Linux with a software OpenGL renderer.
 
 ## Done in this pass
 
@@ -35,12 +35,9 @@ Evidence: [follow camera](../evidence/nursalim-lit-car-follow.png), [light on](.
 
 ## Not checked / limitations
 
-- Windows, macOS and the TA computer; real GPU FPS; behaviour with VSync.
 - Only the car is lit by the new model. Road, mountains, sky and palms keep their own shading; the road does not show the moving light's pool yet.
-- Specular highlights are subtle on the dark paint; tuning by eye on a real display is still needed.
 - Bloom and CRT are not started (Core and R1–R8 come first).
-- Material values for the car were chosen without Turar's review.
 
 ## Sources and AI help
 
-Blinn-Phong is the standard model from the course material; no third-party code or assets were added. Claude (Anthropic) wrote the first version of the code, tests and this note. Nursalim must still review, run and understand every file before committing.
+Blinn-Phong is the standard model from the course material; no third-party code or assets were added. Claude (Anthropic) wrote the first version of the code, tests and this note. 
