@@ -89,7 +89,7 @@ void Road::update(float dt, float speed) {
     if (travel_ < 0)
         travel_ += 12.0;
 }
-void Road::render(const RenderContext &ctx, bool alternatePalette) const {
+void Road::render(const RenderContext &ctx, bool alternatePalette, float carX, float carTilt, bool headlights) const {
     shader_.use();
     shader_.set("uModel", Mat4::identity());
     shader_.set("uView", ctx.view);
@@ -100,6 +100,15 @@ void Road::render(const RenderContext &ctx, bool alternatePalette) const {
     shader_.set("uCameraPosition", ctx.cameraPosition);
     shader_.set("uAlternatePalette", alternatePalette ? 1.0f : 0.0f);
     shader_.set("uLampColor", lampColor(alternatePalette));
+    // Match the car's body-roll pivot and the two headlight mesh centres.
+    const Mat4 body = translation({carX,.52f,0}) * rotationZ(carTilt) * translation({0,-.52f,0});
+    const Vec4 left = body * Vec4{-.53f,.45f,-1.56f,1};
+    const Vec4 right = body * Vec4{.53f,.45f,-1.56f,1};
+    shader_.set("uHeadlightStrength", headlights ? 1.0f : 0.0f);
+    shader_.set("uHeadlightLeft", Vec3{left.x,left.y,left.z});
+    shader_.set("uHeadlightRight", Vec3{right.x,right.y,right.z});
+    const Vec4 direction = rotationZ(carTilt) * Vec4{0,-.075f,-1,0};
+    shader_.set("uHeadlightDirection", Vec3{direction.x,direction.y,direction.z});
     mesh_.draw();
     roadsideShader_.use();
     roadsideShader_.set("uView", ctx.view);

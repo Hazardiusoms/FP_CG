@@ -1,4 +1,5 @@
 #include "CarModel.hpp"
+#include <string_view>
 
 namespace sw {
 namespace {
@@ -64,6 +65,9 @@ std::vector<CarPart> CarModel::parts(const SceneState& state) const {
     const CarMaterial rubber{{.035f,.04f,.06f},{0,0,0},.08f,10.0f},metal{{.32f,.40f,.49f},{0,0,0},.9f,90.0f};
     const CarMaterial pink{{.9f,.03f,.45f},{.8f,.015f,.28f}},cyan{{.10f,.85f,1},{.08f,.65f,.9f}};
     auto add=[&](const char* name,Vec3 p,Vec3 scale,CarMaterial material) {
+        if(std::string_view(name).find("headlight")!=std::string_view::npos)
+            material=state.headlightsEnabled ? CarMaterial{{.55f,.50f,.40f},{.45f,.39f,.28f}}
+                                             : CarMaterial{{.08f,.09f,.11f},{0,0,0}};
         result.push_back({name,0,body*translation(p)*scaling(scale),material});
     };
     result.push_back({"wedge body",2,body*translation({0,.48f,0})*scaling({1.7f,.44f,3.1f}),paint});

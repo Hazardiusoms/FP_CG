@@ -4,7 +4,7 @@
 #include <cstddef>
 
 namespace sw {
-enum class Key { Left, Right, A, D, W, S, C, R, B, T, Escape, I, J, K, L, U, O, Space, G, H, F, Count };
+enum class Key { Left, Right, A, D, W, S, C, R, B, T, Escape, I, J, K, L, U, O, Space, G, H, F, E, Count };
 class Input {
 public:
     void set(Key key, bool down) {
@@ -34,6 +34,7 @@ public:
         s.toggleBloom=pressed_[static_cast<std::size_t>(Key::B)];
         s.toggleCrt=pressed_[static_cast<std::size_t>(Key::T)];
         s.toggleLight=pressed_[static_cast<std::size_t>(Key::F)];
+        s.toggleHeadlights=pressed_[static_cast<std::size_t>(Key::E)];
         pressed_.fill(false);
         return s;
     }
