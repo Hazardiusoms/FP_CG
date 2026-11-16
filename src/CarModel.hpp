@@ -6,7 +6,8 @@
 
 namespace sw {
 struct CarGeometry { std::vector<float> vertices; std::vector<std::uint32_t> indices; };
-struct CarMaterial { Vec3 color; Vec3 emissive; };
+// specular is the highlight strength (0..1), shininess the Blinn-Phong exponent.
+struct CarMaterial { Vec3 color; Vec3 emissive; float specular=0.35f; float shininess=32.0f; };
 struct CarPart { const char* name; int mesh; Mat4 model; CarMaterial material; };
 // CPU model uses the framework math and state; no OpenGL context is required.
 class CarModel {

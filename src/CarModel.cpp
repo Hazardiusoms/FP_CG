@@ -60,8 +60,8 @@ std::vector<CarPart> CarModel::parts(const SceneState& state) const {
     // Roll the body about its centre; wheels remain on the road and inherit translation.
     const Mat4 root=translation({state.carX,0,0});
     const Mat4 body=root*translation({0,.52f,0})*rotationZ(state.steeringTilt)*translation({0,-.52f,0});
-    const CarMaterial paint{{.45f,.12f,.62f},{.018f,.004f,.028f}},glass{{.035f,.21f,.29f},{.008f,.025f,.035f}};
-    const CarMaterial rubber{{.035f,.04f,.06f},{0,0,0}},metal{{.32f,.40f,.49f},{0,0,0}};
+    const CarMaterial paint{{.45f,.12f,.62f},{.018f,.004f,.028f},.85f,80.0f},glass{{.035f,.21f,.29f},{.008f,.025f,.035f},1.0f,160.0f};
+    const CarMaterial rubber{{.035f,.04f,.06f},{0,0,0},.08f,10.0f},metal{{.32f,.40f,.49f},{0,0,0},.9f,90.0f};
     const CarMaterial pink{{.9f,.03f,.45f},{.8f,.015f,.28f}},cyan{{.10f,.85f,1},{.08f,.65f,.9f}};
     auto add=[&](const char* name,Vec3 p,Vec3 scale,CarMaterial material) {
         result.push_back({name,0,body*translation(p)*scaling(scale),material});

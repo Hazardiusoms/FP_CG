@@ -7,6 +7,8 @@
 #include "Road.hpp"
 #include "Car.hpp"
 #include "Environment.hpp"
+#include "Lighting.hpp"
+#include "PostProcessing.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -26,12 +28,14 @@
 namespace {
 using namespace sw;
 namespace fs=std::filesystem;
-struct Options { fs::path assets, capture, smoke; bool help=false; int benchmarkFrames=0; };
+struct Options { fs::path assets, capture, smoke; bool help=false, bloom=false, crt=false; int benchmarkFrames=0; };
 Options parse(int argc,char** argv) {
     Options o;
     for(int i=1;i<argc;++i) {
         const std::string arg=argv[i];
         if(arg=="--help") { o.help=true; continue; }
+        if(arg=="--bloom") { o.bloom=true; continue; }   // start with the effect on (captures, benchmarks)
+        if(arg=="--crt") { o.crt=true; continue; }
         if(arg=="--benchmark") {
             if(i+1>=argc) throw std::runtime_error("Missing benchmark frame count");
             o.benchmarkFrames=std::stoi(argv[++i]);
@@ -77,7 +81,7 @@ std::optional<Key> translateKey(int key) {
         case GLFW_KEY_I: return Key::I; case GLFW_KEY_J: return Key::J;
         case GLFW_KEY_K: return Key::K; case GLFW_KEY_L: return Key::L;
         case GLFW_KEY_U: return Key::U; case GLFW_KEY_O: return Key::O;
-        case GLFW_KEY_SPACE: return Key::Space; case GLFW_KEY_G: return Key::G; case GLFW_KEY_H: return Key::H;
+        case GLFW_KEY_SPACE: return Key::Space; case GLFW_KEY_G: return Key::G; case GLFW_KEY_H: return Key::H; case GLFW_KEY_F: return Key::F;
         case GLFW_KEY_ESCAPE: return Key::Escape;
         default: return std::nullopt;
     }
@@ -177,21 +181,41 @@ void requireVisible(const Frame& frame) {
     require(bright>static_cast<std::size_t>(frame.width)*frame.height/100,"Render check: scene is blank or almost blank");
 }
 
+// Mean brightness of the whole frame (0..255).
+double meanBrightness(const Frame& frame) {
+    double sum=0; for(unsigned char v:frame.rgb) sum+=v;
+    return sum/std::max<std::size_t>(frame.rgb.size(),1);
+}
+// Brightness of the scanline rows relative to the gap rows in the central part of the picture
+// (the HUD sits at the edges). About 1.0 without CRT lines; clearly above 1.0 with them.
+double scanlineContrast(const Frame& frame) {
+    const int period=scanlinePeriod(frame.height);
+    double lineSum=0,gapSum=0; long lineCount=0,gapCount=0;
+    for(int y=frame.height/4;y<frame.height*3/4;++y) for(int x=frame.width/3;x<frame.width*2/3;++x) {
+        const std::size_t i=(static_cast<std::size_t>(y)*frame.width+x)*3;
+        const double v=frame.rgb[i]+frame.rgb[i+1]+frame.rgb[i+2];
+        if(y%period==0) { lineSum+=v; ++lineCount; } else { gapSum+=v; ++gapCount; }
+    }
+    return (lineSum/std::max(lineCount,1L))/std::max(gapSum/std::max(gapCount,1L),1.0);
+}
+
 int run(const Options& options) {
     const bool hidden=!options.capture.empty() || !options.smoke.empty();
     Window window(hidden);
     // Declared after Window: all GPU resources are destroyed before the context.
-    Hud hud; double displayedFps=0; Road road; Environment environment; Car car; Camera camera; SceneState state; RenderContext context;
+    Hud hud; double displayedFps=0; Road road; Environment environment; Car car; Lighting lighting; PostProcessing postProcessing; Camera camera; SceneState state; RenderContext context;
     const fs::path shaders=options.assets.empty() ? executableDirectory()/"shaders" : options.assets;
-    road.initialize(shaders); environment.initialize(shaders); car.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
+    road.initialize(shaders); environment.initialize(shaders); car.initialize(shaders); lighting.initialize(shaders); postProcessing.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
+    state.bloomEnabled=options.bloom; state.crtEnabled=options.crt;
     glfwPollEvents();
     std::cout<<"Shaders: "<<shaders<<"\nW/S speed | C camera | R reset | Esc exit\n"
-             <<"A/D or arrows: steer. Car preview materials; common lighting is pending.\n";
+             <<"A/D or arrows: steer | F: toggle moving light | two-light Blinn-Phong on the car.\n";
 
     auto update=[&](const InputState& input,float dt) {
         updateScene(state,input,dt);
-        if(input.reset) { road.reset(); environment.reset(); car.reset(state); return; }
+        if(input.reset) { road.reset(); environment.reset(); car.reset(state); lighting.reset(); return; }
         car.update(dt,input,state);
+        lighting.update(dt,state);
         updateFollowCamera(state,dt);
         road.update(dt,state.paused ? 0.0f : state.speed);
         environment.update(dt,state.paused ? 0.0f : state.speed);
@@ -199,8 +223,8 @@ int run(const Options& options) {
     auto draw=[&]() -> bool {
         int width=0,height=0; glfwGetFramebufferSize(window.handle,&width,&height);
         if(!camera.update(state,width,height,context)) return false;
+        postProcessing.begin(width,height,state);   // off-screen target only while B or T is on
         glViewport(0,0,width,height);
-        glBindFramebuffer(GL_FRAMEBUFFER,0);
         glDepthMask(GL_TRUE); glEnable(GL_DEPTH_TEST); glDepthFunc(GL_LESS);
         glDisable(GL_BLEND); glDisable(GL_CULL_FACE);
         glClearColor(0.018f,0.012f,0.040f,1.0f);
@@ -208,8 +232,13 @@ int run(const Options& options) {
         environment.renderBackground(context);
         road.render(context,state.alternatePalette);
         environment.renderMountains(context);
-        // Preview materials until the common Lighting service is integrated.
-        car.render(context,state);
+        // Lit objects: the car through the common Lighting service, then the light marker.
+        lighting.beginLit(context,state);
+        car.drawParts(state,[&](const Mat4& model,const Mat3& normal,const CarMaterial& material) {
+            lighting.bindMaterial(model,normal,material);
+        });
+        lighting.drawLightMarker(state);
+        postProcessing.finish(state);               // bloom/CRT to the window; HUD stays crisp
         hud.render(context,state,displayedFps);
         checkGl("frame render"); return true;
     };
@@ -273,6 +302,44 @@ int run(const Options& options) {
         require(road.offset()==beforePause,"Paused road moved");
         InputState palette;palette.palette=true;update(palette,0);
         require(capture("palette.ppm").rgb!=orbited.rgb,"Palette did not change render");
+        // Lighting: the F toggle changes the frame, switching back restores it, and the light moves
+        // with time but freezes while paused (the road is paused at this point of the test).
+        const Frame lit=capture("light-on.ppm");
+        InputState frozen; for(int i=0;i<20;++i) update(frozen,0.05f);
+        require(capture("light-paused.ppm").rgb==lit.rgb,"Moving light advanced while paused");
+        InputState toggle; toggle.toggleLight=true; update(toggle,0);
+        require(!state.movingLightEnabled && capture("light-off.ppm").rgb!=lit.rgb,"Light toggle did not change render");
+        update(toggle,0);
+        require(state.movingLightEnabled && capture("light-back.ppm").rgb==lit.rgb,"Light toggle did not restore render");
+        InputState resume; resume.pause=true; update(resume,0);
+        const Frame running=capture("light-running.ppm");
+        for(int i=0;i<20;++i) update(frozen,0.05f);
+        require(capture("light-moved.ppm").rgb!=running.rgb,"Moving light did not move");
+        // Post-processing: both effects start off; each changes the frame and switching back restores it.
+        const Frame plain=capture("fx-off.ppm");
+        require(!state.bloomEnabled && !state.crtEnabled,"Effects must start off");
+        require(scanlineContrast(plain)<1.03,"Plain frame already has scanline contrast");
+        InputState bloomKey; bloomKey.toggleBloom=true; update(bloomKey,0);
+        const Frame bloomed=capture("fx-bloom.ppm");
+        require(state.bloomEnabled && bloomed.rgb!=plain.rgb,"Bloom did not change render");
+        require(meanBrightness(bloomed)>meanBrightness(plain),"Bloom did not add light");
+        update(bloomKey,0);
+        require(!state.bloomEnabled && capture("fx-bloom-off.ppm").rgb==plain.rgb,"Disabling bloom did not restore the plain render");
+        InputState crtKey; crtKey.toggleCrt=true; update(crtKey,0);
+        const Frame lined=capture("fx-crt.ppm");
+        require(state.crtEnabled && lined.rgb!=plain.rgb,"CRT did not change render");
+        require(scanlineContrast(lined)>1.1,"CRT scanlines are not visible");
+        update(crtKey,0);
+        require(!state.crtEnabled && capture("fx-crt-off.ppm").rgb==plain.rgb,"Disabling CRT did not restore the plain render");
+        // Both on, then resizes: the off-screen targets must be rebuilt without GL errors.
+        update(bloomKey,0); update(crtKey,0);
+        require(state.bloomEnabled && state.crtEnabled,"Both effects should be on");
+        capture("fx-both.ppm"); checkGl("post-processing both on");
+        glfwSetWindowSize(window.handle,800,600); glfwPollEvents();
+        capture("fx-both-800.ppm");
+        InputState resetKey; resetKey.reset=true; update(resetKey,0);
+        require(!state.bloomEnabled && !state.crtEnabled,"Reset should switch the effects off");
+        update(bloomKey,0);
         glfwSetWindowSize(window.handle,320,240); glfwPollEvents();
         capture("small.ppm");
         const auto savedProjection=context.projection;
@@ -280,7 +347,7 @@ int run(const Options& options) {
         require(!camera.update(state,0,0,context),"Zero-sized framebuffer accepted");
         require(context.projection.at(0,0)==savedProjection.at(0,0),"Zero size changed projection");
         checkGl("smoke completion");
-        std::cout<<"PASS: visible scene, grid motion, UV repeat, camera edge input, speed, reset, resize, mouse orbit, pause, palette, zero-size guard, GL errors.\n";
+        std::cout<<"PASS: visible scene, grid motion, UV repeat, camera edge input, speed, reset, resize, mouse orbit, pause, palette, light toggle/motion/pause, bloom and CRT toggles/resizes, zero-size guard, GL errors.\n";
         return 0;
     }
     if(options.benchmarkFrames)glfwSwapInterval(0);
@@ -317,7 +384,8 @@ int run(const Options& options) {
             std::ostringstream title;
             title<<"Synthwave Drive | FPS "<<std::fixed<<std::setprecision(1)<<displayedFps<<" | W/S: speed "<<static_cast<int>(state.speed)
                  <<" | C: "<<(state.camera==CameraMode::Follow ? "Follow" : "Presentation")
-                 <<" | R: reset | Esc: exit | A/D: steer";
+                 <<" | R: reset | Esc: exit | A/D: steer | F: light"
+                 <<" | B: bloom "<<(state.bloomEnabled ? "on" : "off")<<" | T: CRT "<<(state.crtEnabled ? "on" : "off");
             glfwSetWindowTitle(window.handle,title.str().c_str()); nextTitle=now+0.2;
         }
     }
@@ -332,6 +400,7 @@ int main(int argc,char** argv) {
                      <<"Run without arguments for the interactive window.\n"
                      <<"--benchmark N      Measure N frames after 60 warm-up frames, then exit\n"
                      <<"--assets DIR       Override the shader directory\n"
+                     <<"--bloom / --crt     Start with bloom / CRT scanlines enabled (B / T toggle at runtime)\n"
                      <<"--capture FILE.ppm Render one frame and exit\n"
                      <<"--smoke-test DIR   Run real OpenGL checks and save frames\n";
             return 0;

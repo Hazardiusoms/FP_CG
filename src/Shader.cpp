@@ -57,4 +57,5 @@ void Shader::set(const char* name,const Mat4& m) const { glUniformMatrix4fv(loca
 void Shader::set(const char* name,const Mat3& m) const { glUniformMatrix3fv(location(name),1,GL_FALSE,m.data()); }
 void Shader::set(const char* name,Vec3 v) const { glUniform3f(location(name),v.x,v.y,v.z); }
 void Shader::set(const char* name,float v) const { glUniform1f(location(name),v); }
+void Shader::setInt(const char* name,int v) const { glUniform1i(location(name),v); }
 } // namespace sw

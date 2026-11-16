@@ -19,6 +19,7 @@ struct InputState {
     bool changeCamera = false;
     bool toggleBloom = false;
     bool toggleCrt = false;
+    bool toggleLight = false;
 };
 struct SceneState {
     double elapsedTime = 0;
@@ -29,8 +30,9 @@ struct SceneState {
     float followX = 0;           // Smoothed camera tracking, owned by the framework.
     float steeringTilt = 0;       // Radians; Car module will be the sole writer.
     CameraMode camera = CameraMode::Follow;
-    bool bloomEnabled = false;   // Reserved; no effect implemented in this build.
-    bool crtEnabled = false;
+    bool bloomEnabled = false;   // B toggles; PostProcessing reads it. Off by default (plain core scene).
+    bool crtEnabled = false;     // T toggles; same.
+    bool movingLightEnabled = true; // Lighting module reads this; F toggles it.
 };
 inline float frameStep(double elapsed) {
     if (!std::isfinite(elapsed)) return 0;
@@ -41,6 +43,9 @@ inline void updateScene(SceneState& scene, const InputState& input, float dt) {
     scene.elapsedTime+=dt;
     if (input.pause) scene.paused = !scene.paused;
     if (input.palette) scene.alternatePalette = !scene.alternatePalette;
+    if (input.toggleLight) scene.movingLightEnabled = !scene.movingLightEnabled;
+    if (input.toggleBloom) scene.bloomEnabled = !scene.bloomEnabled;
+    if (input.toggleCrt) scene.crtEnabled = !scene.crtEnabled;
     if (input.help) scene.showHelp = !scene.showHelp;
     if (input.orbitHorizontal || input.orbitVertical || input.zoom || input.mouseDx || input.mouseDy || input.scroll)
         scene.camera = CameraMode::Presentation;
@@ -50,7 +55,6 @@ inline void updateScene(SceneState& scene, const InputState& input, float dt) {
     scene.speed=std::clamp(scene.speed+input.speedAdjustment*speedAcceleration*dt,0.0f,maximumSpeed);
     if (input.changeCamera)
         scene.camera=scene.camera==CameraMode::Follow ? CameraMode::Presentation : CameraMode::Follow;
-    // Effect requests are intentionally not enabled before those modules exist.
 }
 // Exponential tracking gives the same response at different frame rates.
 inline void updateFollowCamera(SceneState& scene, float dt) {
