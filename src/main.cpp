@@ -7,6 +7,7 @@
 #include "Road.hpp"
 #include "Car.hpp"
 #include "Environment.hpp"
+#include "Lighting.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -77,7 +78,7 @@ std::optional<Key> translateKey(int key) {
         case GLFW_KEY_I: return Key::I; case GLFW_KEY_J: return Key::J;
         case GLFW_KEY_K: return Key::K; case GLFW_KEY_L: return Key::L;
         case GLFW_KEY_U: return Key::U; case GLFW_KEY_O: return Key::O;
-        case GLFW_KEY_SPACE: return Key::Space; case GLFW_KEY_G: return Key::G; case GLFW_KEY_H: return Key::H;
+        case GLFW_KEY_SPACE: return Key::Space; case GLFW_KEY_G: return Key::G; case GLFW_KEY_H: return Key::H; case GLFW_KEY_F: return Key::F;
         case GLFW_KEY_ESCAPE: return Key::Escape;
         default: return std::nullopt;
     }
@@ -181,17 +182,18 @@ int run(const Options& options) {
     const bool hidden=!options.capture.empty() || !options.smoke.empty();
     Window window(hidden);
     // Declared after Window: all GPU resources are destroyed before the context.
-    Hud hud; double displayedFps=0; Road road; Environment environment; Car car; Camera camera; SceneState state; RenderContext context;
+    Hud hud; double displayedFps=0; Road road; Environment environment; Car car; Lighting lighting; Camera camera; SceneState state; RenderContext context;
     const fs::path shaders=options.assets.empty() ? executableDirectory()/"shaders" : options.assets;
-    road.initialize(shaders); environment.initialize(shaders); car.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
+    road.initialize(shaders); environment.initialize(shaders); car.initialize(shaders); lighting.initialize(shaders); hud.initialize(shaders); checkGl("initialization");
     glfwPollEvents();
     std::cout<<"Shaders: "<<shaders<<"\nW/S speed | C camera | R reset | Esc exit\n"
-             <<"A/D or arrows: steer. Car preview materials; common lighting is pending.\n";
+             <<"A/D or arrows: steer | F: toggle moving light | two-light Blinn-Phong on the car.\n";
 
     auto update=[&](const InputState& input,float dt) {
         updateScene(state,input,dt);
-        if(input.reset) { road.reset(); environment.reset(); car.reset(state); return; }
+        if(input.reset) { road.reset(); environment.reset(); car.reset(state); lighting.reset(); return; }
         car.update(dt,input,state);
+        lighting.update(dt,state);
         updateFollowCamera(state,dt);
         road.update(dt,state.paused ? 0.0f : state.speed);
         environment.update(dt,state.paused ? 0.0f : state.speed);
@@ -208,8 +210,12 @@ int run(const Options& options) {
         environment.renderBackground(context);
         road.render(context,state.alternatePalette);
         environment.renderMountains(context);
-        // Preview materials until the common Lighting service is integrated.
-        car.render(context,state);
+        // Lit objects: the car through the common Lighting service, then the light marker.
+        lighting.beginLit(context,state);
+        car.drawParts(state,[&](const Mat4& model,const Mat3& normal,const CarMaterial& material) {
+            lighting.bindMaterial(model,normal,material);
+        });
+        lighting.drawLightMarker(state);
         hud.render(context,state,displayedFps);
         checkGl("frame render"); return true;
     };
@@ -273,6 +279,19 @@ int run(const Options& options) {
         require(road.offset()==beforePause,"Paused road moved");
         InputState palette;palette.palette=true;update(palette,0);
         require(capture("palette.ppm").rgb!=orbited.rgb,"Palette did not change render");
+        // Lighting: the F toggle changes the frame, switching back restores it, and the light moves
+        // with time but freezes while paused (the road is paused at this point of the test).
+        const Frame lit=capture("light-on.ppm");
+        InputState frozen; for(int i=0;i<20;++i) update(frozen,0.05f);
+        require(capture("light-paused.ppm").rgb==lit.rgb,"Moving light advanced while paused");
+        InputState toggle; toggle.toggleLight=true; update(toggle,0);
+        require(!state.movingLightEnabled && capture("light-off.ppm").rgb!=lit.rgb,"Light toggle did not change render");
+        update(toggle,0);
+        require(state.movingLightEnabled && capture("light-back.ppm").rgb==lit.rgb,"Light toggle did not restore render");
+        InputState resume; resume.pause=true; update(resume,0);
+        const Frame running=capture("light-running.ppm");
+        for(int i=0;i<20;++i) update(frozen,0.05f);
+        require(capture("light-moved.ppm").rgb!=running.rgb,"Moving light did not move");
         glfwSetWindowSize(window.handle,320,240); glfwPollEvents();
         capture("small.ppm");
         const auto savedProjection=context.projection;
@@ -280,7 +299,7 @@ int run(const Options& options) {
         require(!camera.update(state,0,0,context),"Zero-sized framebuffer accepted");
         require(context.projection.at(0,0)==savedProjection.at(0,0),"Zero size changed projection");
         checkGl("smoke completion");
-        std::cout<<"PASS: visible scene, grid motion, UV repeat, camera edge input, speed, reset, resize, mouse orbit, pause, palette, zero-size guard, GL errors.\n";
+        std::cout<<"PASS: visible scene, grid motion, UV repeat, camera edge input, speed, reset, resize, mouse orbit, pause, palette, light toggle/motion/pause, zero-size guard, GL errors.\n";
         return 0;
     }
     if(options.benchmarkFrames)glfwSwapInterval(0);
@@ -317,7 +336,7 @@ int run(const Options& options) {
             std::ostringstream title;
             title<<"Synthwave Drive | FPS "<<std::fixed<<std::setprecision(1)<<displayedFps<<" | W/S: speed "<<static_cast<int>(state.speed)
                  <<" | C: "<<(state.camera==CameraMode::Follow ? "Follow" : "Presentation")
-                 <<" | R: reset | Esc: exit | A/D: steer";
+                 <<" | R: reset | Esc: exit | A/D: steer | F: light";
             glfwSetWindowTitle(window.handle,title.str().c_str()); nextTitle=now+0.2;
         }
     }

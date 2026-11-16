@@ -1,8 +1,0 @@
-/build*/
-/out/
-.DS_Store
-.vscode/
-.idea/
-*.user
-*.ppm
-/docs/evidence/smoke/

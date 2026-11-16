@@ -19,6 +19,7 @@ struct InputState {
     bool changeCamera = false;
     bool toggleBloom = false;
     bool toggleCrt = false;
+    bool toggleLight = false;
 };
 struct SceneState {
     double elapsedTime = 0;
@@ -31,6 +32,7 @@ struct SceneState {
     CameraMode camera = CameraMode::Follow;
     bool bloomEnabled = false;   // Reserved; no effect implemented in this build.
     bool crtEnabled = false;
+    bool movingLightEnabled = true; // Lighting module reads this; F toggles it.
 };
 inline float frameStep(double elapsed) {
     if (!std::isfinite(elapsed)) return 0;
@@ -41,6 +43,7 @@ inline void updateScene(SceneState& scene, const InputState& input, float dt) {
     scene.elapsedTime+=dt;
     if (input.pause) scene.paused = !scene.paused;
     if (input.palette) scene.alternatePalette = !scene.alternatePalette;
+    if (input.toggleLight) scene.movingLightEnabled = !scene.movingLightEnabled;
     if (input.help) scene.showHelp = !scene.showHelp;
     if (input.orbitHorizontal || input.orbitVertical || input.zoom || input.mouseDx || input.mouseDy || input.scroll)
         scene.camera = CameraMode::Presentation;
