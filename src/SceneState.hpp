@@ -20,6 +20,7 @@ struct InputState {
     bool toggleBloom = false;
     bool toggleCrt = false;
     bool toggleLight = false;
+    bool toggleHeadlights = false;
 };
 struct SceneState {
     double elapsedTime = 0;
@@ -32,6 +33,7 @@ struct SceneState {
     CameraMode camera = CameraMode::Follow;
     bool bloomEnabled = false;   // B toggles; PostProcessing reads it. Off by default (plain core scene).
     bool crtEnabled = false;     // T toggles; same.
+    bool headlightsEnabled = true; // E toggles the car headlights.
     bool movingLightEnabled = true; // Lighting module reads this; F toggles it.
 };
 inline float frameStep(double elapsed) {
@@ -43,6 +45,7 @@ inline void updateScene(SceneState& scene, const InputState& input, float dt) {
     scene.elapsedTime+=dt;
     if (input.pause) scene.paused = !scene.paused;
     if (input.palette) scene.alternatePalette = !scene.alternatePalette;
+    if (input.toggleHeadlights) scene.headlightsEnabled = !scene.headlightsEnabled;
     if (input.toggleLight) scene.movingLightEnabled = !scene.movingLightEnabled;
     if (input.toggleBloom) scene.bloomEnabled = !scene.bloomEnabled;
     if (input.toggleCrt) scene.crtEnabled = !scene.crtEnabled;

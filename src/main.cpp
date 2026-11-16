@@ -82,6 +82,7 @@ std::optional<Key> translateKey(int key) {
         case GLFW_KEY_K: return Key::K; case GLFW_KEY_L: return Key::L;
         case GLFW_KEY_U: return Key::U; case GLFW_KEY_O: return Key::O;
         case GLFW_KEY_SPACE: return Key::Space; case GLFW_KEY_G: return Key::G; case GLFW_KEY_H: return Key::H; case GLFW_KEY_F: return Key::F;
+        case GLFW_KEY_E: return Key::E;
         case GLFW_KEY_ESCAPE: return Key::Escape;
         default: return std::nullopt;
     }
@@ -230,7 +231,7 @@ int run(const Options& options) {
         glClearColor(0.018f,0.012f,0.040f,1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         environment.renderBackground(context);
-        road.render(context,state.alternatePalette);
+        road.render(context,state.alternatePalette,state.carX,state.steeringTilt,state.headlightsEnabled);
         environment.renderMountains(context);
         // Lit objects: the car through the common Lighting service, then the light marker.
         lighting.beginLit(context,state,static_cast<float>(road.travel()));
@@ -256,6 +257,14 @@ int run(const Options& options) {
             writeFrame(options.smoke/name,frame); return frame;
         };
         const Frame initial=capture("follow.ppm");
+        window.input.set(Key::E,true); update(window.input.consume(),0);
+        require(!state.headlightsEnabled,"Headlight key did not turn lights off");
+        require(capture("headlights-off.ppm").rgb!=initial.rgb,"Headlight toggle did not change frame");
+        window.input.set(Key::E,true); update(window.input.consume(),0);
+        require(!state.headlightsEnabled,"Held headlight key toggled repeatedly");
+        window.input.set(Key::E,false); window.input.set(Key::E,true); update(window.input.consume(),0);
+        require(state.headlightsEnabled && capture("headlights-on.ppm").rgb==initial.rgb,"Headlights did not restore frame");
+        window.input.clear();
         InputState steer; steer.steering=1;
         update(steer,0.05f);
         require(state.followX>0 && state.followX<state.carX,"Follow camera must update after car steering");

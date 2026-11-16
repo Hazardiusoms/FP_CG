@@ -8,6 +8,15 @@ uniform float uRoadHalfWidth;
 uniform vec3 uCameraPosition;
 uniform vec3 uLampColor;   // lamp-post light colour (palette aware, set by the CPU)
 out vec4 fragColor;
+uniform vec3 uHeadlightLeft, uHeadlightRight, uHeadlightDirection;
+uniform float uHeadlightStrength;
+float headlight(vec3 origin) {
+    vec3 delta=vWorldPosition-origin;
+    float distanceToLight=max(length(delta),0.001);
+    float cone=smoothstep(0.945,0.995,dot(delta/distanceToLight,normalize(uHeadlightDirection)));
+    float diffuse=max(-delta.y/distanceToLight,0.0);
+    return uHeadlightStrength*cone*diffuse*1.6/(1.0+0.025*distanceToLight*distanceToLight);
+}
 float stripe(float distance, float width, float aa) {
     return 1.0-smoothstep(width,width+aa,distance);
 }
@@ -42,5 +51,7 @@ void main() {
     color+=(1.0-inside)*uLampColor*poolAlong*exp(-pow(x-5.0,2.0)/(2.0*1.4*1.4))*0.12;
 
     float visibility=1.0-smoothstep(60.0,250.0,length(vWorldPosition-uCameraPosition));
+    // Two soft spotlights illuminate the ground; no volumetric beam or shadow mapping.
+    color+=vec3(1.0,0.90,0.72)*(headlight(uHeadlightLeft)+headlight(uHeadlightRight));
     fragColor=vec4(mix(vec3(0.018,0.012,0.040),color,visibility),1);
 }

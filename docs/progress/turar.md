@@ -60,3 +60,10 @@ Preserved a complete local car backup outside the repository before fast-forward
 ## Publication authorization
 
 Turar explicitly requested a focused commit, push of turar/car and immediate merge into main. This task-specific instruction overrides the default human-only publication workflow for these actions. Tests were rerun successfully on feccee7 with the latest sun shader; evidence images were refreshed. No independent teammate review is claimed.
+
+## 16 November headlight preview
+
+Codex added two warm soft spotlights to the ground shader at the car headlight positions, matching body translation and roll. Road::render now accepts carX, carTilt and the headlight switch; main supplies them. This lights the ground only, without shadows, volumetric beams or lighting on other meshes. Windows Release build and OpenGL smoke checks passed; a real bloom capture was visually inspected.
+
+
+Headlight revision: reduced ground intensity from 7.0 to 1.6, broadened the soft cone transition, and added edge-triggered E control. Headlight meshes dim when disabled; reset restores on. Four CTest suites and GPU smoke tests passed, including E press/hold/repress and exact restored-frame checks. Bloom capture visually checked. Turar explicitly authorized a focused commit, push and immediate merge into main for these AI-assisted changes on 16 November. No independent teammate review is claimed.

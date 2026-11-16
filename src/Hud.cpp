@@ -91,7 +91,7 @@ void Hud::render(const RenderContext &ctx, const SceneState &scene, double fps) 
         rect(data, 20, height - 88 * scale, 213 * scale, 57 * scale, {0.025f, 0.03f, 0.065f});
         text(data, "W/S SPEED  SPACE PAUSE  G PALETTE", 26, height - 82 * scale, scale, muted);
         text(data, "C CAMERA  I/J/K/L ORBIT  U/O ZOOM", 26, height - 71 * scale, scale, muted);
-        text(data, "F LIGHT  B BLOOM  T CRT", 26, height - 60 * scale, scale, muted);
+        text(data, "E LAMPS  F LIGHT  B BLOOM  T CRT", 26, height - 60 * scale, scale, muted);
         text(data, "A/D STEER  H HELP  R RESET  ESC EXIT", 26, height - 49 * scale, scale, muted);
     } else
         text(data, "H HELP", 20, height - 20 - 7 * scale, scale, muted);

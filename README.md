@@ -46,6 +46,7 @@ Actual captures: [follow](docs/evidence/almas-road-finished-follow.png) and
 - I/J/K/L or right-mouse drag: orbit; U/O or scroll: zoom. Orbit input automatically selects orbit mode.
 - Space: pause/resume road motion. Camera controls remain available.
 - G: switch neon palette.
+- E: toggle the soft warm car headlights (on by default; R restores them).
 - F: switch the moving cyan light on/off (the sun light stays on).
 - B: toggle bloom. T: toggle CRT scanlines. Both start off, work independently and are reset to off by R.
 - H: show/hide help; live FPS remains visible.

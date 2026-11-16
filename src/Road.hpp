@@ -13,7 +13,8 @@ class Road {
     Road &operator=(const Road &) = delete;
     void initialize(const std::filesystem::path &shaderDirectory);
     void update(float deltaTime, float speed);
-    void render(const RenderContext &context, bool alternatePalette = false) const;
+    void render(const RenderContext &context, bool alternatePalette = false,
+                float carX = 0, float carTilt = 0, bool headlights = true) const;
     // Soft light cones under the lamp heads: additive, drawn late so they blend over everything
     // already in the frame and are hidden by nearer geometry (they write no depth).
     void renderBeams(const RenderContext &context, bool alternatePalette = false) const;
