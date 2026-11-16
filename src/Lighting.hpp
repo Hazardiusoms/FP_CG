@@ -15,7 +15,8 @@ public:
     void update(float dt, const SceneState& state) { lightTime_ = advanceLightTime(lightTime_, dt, state.paused); }
     void reset() { lightTime_ = 0; }
     // Binds the lit program and uploads the per-frame uniforms (camera, ambient, both lights).
-    void beginLit(const RenderContext& context, const SceneState& state) const;
+    // lampTravel is Road::travel(), so the lamp-post lights follow the posts sliding past.
+    void beginLit(const RenderContext& context, const SceneState& state, float lampTravel) const;
     // Uploads model, normal matrix and material for the next draw call of the lit program.
     void bindMaterial(const Mat4& model, const Mat3& normal, const CarMaterial& material) const;
     // Small emissive cube showing where the moving light is; hidden while the light is off.

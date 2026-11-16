@@ -1,13 +1,16 @@
 #pragma once
 // CPU-side description of the scene lights. No OpenGL here, so the numbers can be unit-tested.
 // World space is used for everything: +Y up, +X right, the car faces -Z.
+#include "LampPosts.hpp"
 #include "Math.hpp"
 #include "SceneState.hpp"
 #include <algorithm>
 #include <cmath>
 
 namespace sw {
-constexpr int lightCount = 2;
+// Light 0 is the sun, light 1 the moving accent light, the rest are the roadside lamps near the car.
+// shaders/lit.frag declares the same count (LIGHT_COUNT); a smaller shader array fails loudly at upload.
+constexpr int lightCount = 2 + lampLightCount;
 
 struct LightSource {
     // Directional light: unit vector pointing TOWARD the light. Point light: world position.
@@ -20,7 +23,7 @@ struct LightSource {
 
 struct LightingFrame {
     Vec3 ambient;
-    LightSource lights[lightCount];   // [0] sun (directional), [1] moving accent (point)
+    LightSource lights[lightCount];   // [0] sun (directional), [1] moving accent, [2..] lamp posts (point)
 };
 
 // The moving light orbits the car at a fixed height band. Orbit and bob speeds are integer
@@ -44,7 +47,8 @@ inline float advanceLightTime(float lightTime, float dt, bool paused) {
     return std::fmod(lightTime + std::min(dt, 0.05f), lightLoopSeconds);
 }
 
-inline LightingFrame computeLightingFrame(const SceneState& state, float lightTime) {
+// lampTravel is the road's travel (0..12 m) so the lamp lights stay on the posts that slide past.
+inline LightingFrame computeLightingFrame(const SceneState& state, float lightTime, float lampTravel = 0.0f) {
     const float alt = state.alternatePalette ? 1.0f : 0.0f;
     auto mix = [alt](Vec3 a, Vec3 b) { return a * (1.0f - alt) + b * alt; };
     LightingFrame frame;
@@ -59,6 +63,15 @@ inline LightingFrame computeLightingFrame(const SceneState& state, float lightTi
         ? mix({0.15f, 0.85f, 1.00f}, {1.00f, 0.55f, 0.15f}) * 2.6f : Vec3{};
     accent.linearAttenuation = 0.08f;
     accent.quadraticAttenuation = 0.035f;
+    // Lamp posts: pink (or blue) point lights at the lamp heads, fading out with distance from the car.
+    const auto lamps = lampLights(lampTravel);
+    for (std::size_t i = 0; i < lamps.size(); ++i) {
+        LightSource& lamp = frame.lights[2 + i];
+        lamp.point = true;
+        lamp.vector = lamps[i].position;
+        lamp.color = lampColor(state.alternatePalette) * (2.0f * lamps[i].strength);
+        lamp.quadraticAttenuation = 0.12f;
+    }
     return frame;
 }
 } // namespace sw

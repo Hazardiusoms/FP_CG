@@ -9,8 +9,8 @@ void Lighting::initialize(const std::filesystem::path& shaders) {
     marker_.initialize(cube.vertices, 6, cube.indices, {{0, 3, 0}, {1, 3, 3}});
 }
 
-void Lighting::beginLit(const RenderContext& context, const SceneState& state) const {
-    const LightingFrame frame = computeLightingFrame(state, lightTime_);
+void Lighting::beginLit(const RenderContext& context, const SceneState& state, float lampTravel) const {
+    const LightingFrame frame = computeLightingFrame(state, lightTime_, lampTravel);
     lit_.use();
     lit_.set("uView", context.view);
     lit_.set("uProjection", context.projection);

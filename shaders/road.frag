@@ -6,6 +6,7 @@ uniform float uTravel;
 uniform float uAlternatePalette;
 uniform float uRoadHalfWidth;
 uniform vec3 uCameraPosition;
+uniform vec3 uLampColor;   // lamp-post light colour (palette aware, set by the CPU)
 out vec4 fragColor;
 float stripe(float distance, float width, float aa) {
     return 1.0-smoothstep(width,width+aa,distance);
@@ -33,9 +34,12 @@ void main() {
     // Analytic light spill, not screen-space bloom or a claimed reflection.
     color+=cyan*0.13*exp(-abs(x-uRoadHalfWidth)*2.5);
     color+=pink*0.045*exp(-x*0.7);
+    // Each lamp head (x = +-4 m, 3 m up) lights an elliptical patch: long along the road, fading
+    // across it. Analytic, so it is not a shadow or reflection claim.
     float lampZ=abs(fract(z/12.0+0.5)-0.5)*12.0;
-    float pool=exp(-lampZ*lampZ*0.35)*exp(-pow(x-3.9,2.0)*0.65);
-    color+=inside*pink*pool*0.09;
+    float poolAlong=exp(-lampZ*lampZ/(2.0*2.4*2.4));
+    color+=inside*uLampColor*poolAlong*exp(-pow(x-3.2,2.0)/(2.0*1.35*1.35))*0.42;
+    color+=(1.0-inside)*uLampColor*poolAlong*exp(-pow(x-5.0,2.0)/(2.0*1.4*1.4))*0.12;
 
     float visibility=1.0-smoothstep(60.0,250.0,length(vWorldPosition-uCameraPosition));
     fragColor=vec4(mix(vec3(0.018,0.012,0.040),color,visibility),1);
