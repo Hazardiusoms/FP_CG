@@ -1,7 +1,8 @@
 #version 330 core
 // Per-fragment Blinn-Phong with ambient, diffuse, specular and emissive terms, evaluated in
-// world space. Light 0 is directional, light 1 a point light with distance attenuation.
-const int LIGHT_COUNT = 2;
+// world space. Light 0 is directional; the rest are point lights with distance attenuation
+// (the moving accent light and the roadside lamp posts).
+const int LIGHT_COUNT = 10;   // must equal lightCount in LightingModel.hpp
 struct Light {
     vec3 vector;      // directional: toward the light; point: world position
     float isPoint;    // 0 or 1

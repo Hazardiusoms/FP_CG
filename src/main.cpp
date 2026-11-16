@@ -233,11 +233,12 @@ int run(const Options& options) {
         road.render(context,state.alternatePalette);
         environment.renderMountains(context);
         // Lit objects: the car through the common Lighting service, then the light marker.
-        lighting.beginLit(context,state);
+        lighting.beginLit(context,state,static_cast<float>(road.travel()));
         car.drawParts(state,[&](const Mat4& model,const Mat3& normal,const CarMaterial& material) {
             lighting.bindMaterial(model,normal,material);
         });
         lighting.drawLightMarker(state);
+        road.renderBeams(context,state.alternatePalette);   // lamp light cones, after opaque geometry
         postProcessing.finish(state);               // bloom/CRT to the window; HUD stays crisp
         hud.render(context,state,displayedFps);
         checkGl("frame render"); return true;
